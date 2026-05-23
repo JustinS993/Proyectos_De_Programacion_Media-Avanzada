@@ -8,12 +8,14 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 |--------|-------------------|
 | [`02-ejercicio-contador`](./02-ejercicio-contador) | Contador interactivo con `useState` |
 | [`03-ejercicio-lista-tareas`](./03-ejercicio-lista-tareas) | Lista de tareas (CRUD en memoria) con tipado e interfaces |
+| [`04-mi-primera-app`](./04-mi-primera-app) | Mi primera aplicación móvil con Expo y React Native |
 
 ## Stack común
 
-- **React 19** y **React DOM**
+- **React 19** y **React DOM** (Web)
+- **React Native** y **Expo** (Móvil)
 - **TypeScript**
-- **Vite 8** (desarrollo con HMR y build optimizado)
+- **Vite 8** (desarrollo web)
 - **ESLint** para calidad de código
 
 Los `node_modules` y la carpeta `dist` no se versionan; en cada proyecto debes ejecutar `npm install` antes de desarrollar o compilar.
@@ -77,6 +79,27 @@ npm run dev
 ```
 
 Mismos scripts adicionales que en el ejercicio del contador (`build`, `preview`, `lint`).
+
+---
+
+## 04 — Mi primera APP (Móvil)
+
+Aplicación móvil básica desarrollada con **Expo** y **React Native**. Incluye un contador con un botón flotante (FAB) y hooks personalizados.
+
+### Qué practica
+
+- Desarrollo móvil multiplataforma con **Expo**
+- Componentes nativos y estilos con `StyleSheet`
+- Hooks personalizados (`useCounter`)
+- Componentes reutilizables (`FAB`)
+
+### Cómo ejecutarlo
+
+```bash
+cd 04-mi-primera-app
+npm install
+npx expo start
+```
 
 ---
 
