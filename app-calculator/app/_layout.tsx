@@ -1,16 +1,32 @@
-import { View } from 'react-native';
-import { Slot } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { globalStyles } from '@/styles/globalStyles';
+import { Fonts } from "@/constants/theme"; 
+import { globalStyles } from "@/styles/globalStyles"; 
+import { Slot } from "expo-router"; 
+import { StatusBar } from "expo-status-bar"; 
+import React from "react"; 
+import { Text, View } from "react-native"; 
 
-const RootLayout = () => {
-  return (
-    <View style={globalStyles.background}>
-      <Slot />
-      <StatusBar style="light" />
-    </View>
-  );
-};
+const RootLayout = () => { 
+  return ( 
+    <View> 
+      <View 
 
-export default RootLayout;
+        style={[{ position: "absolute", width: '100%', display: "flex", alignItems: "center" }, globalStyles.background]}> 
+        <Text 
+          style={{ 
+            marginTop: 20, 
+            fontSize: 40, 
+            fontFamily: Fonts.serif, 
+            color: "white", 
+            paddingBottom: 10 
+          }} 
+        > 
+          Calculator App 
+        </Text> 
+      </View> 
+      <Slot /> 
+      <StatusBar style="light" /> 
+    </View> 
+  ); 
+}; 
+
+export default RootLayout; 
