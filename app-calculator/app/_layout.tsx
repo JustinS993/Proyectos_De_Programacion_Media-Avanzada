@@ -1,12 +1,15 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import { View } from 'react-native';
+import { Slot } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React from 'react';
 
 const RootLayout = () => {
   return (
     <View>
-      <Text>RootLayout</Text>
+      <Slot />
+      <StatusBar style="light" />
     </View>
-  )
-}
+  );
+};
 
-export default RootLayout
+export default RootLayout;
