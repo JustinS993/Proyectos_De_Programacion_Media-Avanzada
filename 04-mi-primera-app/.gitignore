@@ -1,15 +1,15 @@
-# IDE folders
-.vscode/
-.idea/
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
 node_modules/
 
-# Expo / React Native (From remote)
+# Expo
 .expo/
 dist/
 web-build/
 expo-env.d.ts
+
+# Native
 .kotlin/
 *.orig.*
 *.jks
@@ -17,19 +17,17 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+
+# Metro
 .metro-health-check*
-/ios
-/android
 
 # debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-*.log
 
-# OS files
+# macOS
 .DS_Store
-Thumbs.db
 *.pem
 
 # local env files
@@ -37,3 +35,7 @@ Thumbs.db
 
 # typescript
 *.tsbuildinfo
+
+# generated native folders
+/ios
+/android
