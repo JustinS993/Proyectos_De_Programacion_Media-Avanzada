@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SyntaxQuest: Mazmorras Digitales</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+    <!-- CodeMirror 6 Resources -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/javascript/javascript.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/dracula.min.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="phaser-game"></div>
+        <div id="instructions">
+            <h4>Controles</h4>
+            <p>Mover: Flechas</p>
+            <p>Interacción: Colisiona con objetos</p>
+        </div>
+        <div id="editor-container">
+            <div class="editor-header">
+                <h3>SyntaxQuest Terminal</h3>
+                <span id="challenge-title">Esperando desafío...</span>
+            </div>
+            <div class="editor-body">
+                <p id="challenge-desc">Explora la mazmorra para encontrar acertijos.</p>
+                <div id="code-editor-wrapper">
+                    <!-- CodeMirror se inyectará aquí -->
+                </div>
+                <div class="test-cases" id="test-cases-panel">
+                    <!-- Test cases results -->
+                </div>
+                <button id="run-button">Ejecutar y Validar</button>
+            </div>
+            <div id="feedback-panel">
+                <p id="feedback-text">Consola de salida...</p>
+            </div>
+        </div>
+    </div>
+    <script src="game.js" type="module"></script>
+</body>
+</html>
