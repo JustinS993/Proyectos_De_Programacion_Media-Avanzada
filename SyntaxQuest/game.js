@@ -24,104 +24,53 @@ const game = new Phaser.Game(config);
 let player;
 let cursors;
 let obstacles;
+let walls;
+let enemy;
 let currentChallenge = null;
 let codeEditor = null;
 let gameScene = null;
-
-// Sistema de persistencia
-const GameState = {
-    completedChallenges: JSON.parse(localStorage.getItem('syntaxquest_progress')) || [],
-    save: function(id) {
-        if (!this.completedChallenges.includes(id)) {
-            this.completedChallenges.push(id);
-            localStorage.setItem('syntaxquest_progress', JSON.stringify(this.completedChallenges));
-        }
-    }
-};
+let isGameOver = false;
 
 const challenges = [
     {
-        id: 'door_1',
-        title: 'Acceso a la Terminal',
-        description: 'Escribe una función llamada "abrir" que retorne true.',
-        initialCode: 'function abrir() {\n  // Tu código aquí\n}',
-        testCases: [
-            { input: 'abrir()', expected: true }
+        id: 'choice_1',
+        title: 'Selector de Bucles',
+        description: '¿Cuál es la sintaxis correcta para un bucle for de 0 a 4?',
+        options: [
+            { text: 'for(let i=0; i<5; i++)', correct: true },
+            { text: 'for(let i=0; i<=5; i++)', correct: false },
+            { text: 'for(i=1 to 5)', correct: false }
         ],
         onSuccess: (scene) => {
-            scene.feedback('¡Puerta abierta! Código verificado.');
-            const door = obstacles.children.entries.find(o => o.getData('id') === 'door_1');
-            if (door) {
-                scene.emitSuccess(door.x, door.y);
-                door.destroy();
+            scene.feedback('¡Correcto! El firewall se ha debilitado.');
+            const wall = walls.children.entries.find(w => w.getData('id') === 'maze_wall_1');
+            if (wall) {
+                scene.emitSuccess(wall.x, wall.y);
+                wall.destroy();
             }
-            GameState.save('door_1');
         }
     },
     {
-        id: 'bridge_1',
-        title: 'Generador de Puente',
-        description: 'Escribe una función "sumar(a, b)" que retorne la suma de dos números.',
-        initialCode: 'function sumar(a, b) {\n  \n}',
-        testCases: [
-            { input: 'sumar(2, 3)', expected: 5 },
-            { input: 'sumar(-1, 1)', expected: 0 },
-            { input: 'sumar(10, 20)', expected: 30 }
+        id: 'choice_2',
+        title: 'Lógica de Arreglos',
+        description: '¿Cómo obtienes el primer elemento de un arreglo "data"?',
+        options: [
+            { text: 'data[1]', correct: false },
+            { text: 'data.first()', correct: false },
+            { text: 'data[0]', correct: true }
         ],
         onSuccess: (scene) => {
-            scene.feedback('¡Puente extendido! Los tests pasaron.');
-            const bridge = obstacles.children.entries.find(o => o.getData('id') === 'bridge_1');
-            if (bridge) {
-                scene.emitSuccess(bridge.x, bridge.y);
-                bridge.setAlpha(1);
-                bridge.body.enable = true;
+            scene.feedback('¡Acceso concedido! El camino está libre.');
+            const wall = walls.children.entries.find(w => w.getData('id') === 'maze_wall_2');
+            if (wall) {
+                scene.emitSuccess(wall.x, wall.y);
+                wall.destroy();
             }
-            GameState.save('bridge_1');
-        }
-    },
-    {
-        id: 'array_1',
-        title: 'Filtro de Seguridad',
-        description: 'Crea una función "filtrarPares(arr)" que retorne solo los números pares del arreglo.',
-        initialCode: 'function filtrarPares(numeros) {\n  \n}',
-        testCases: [
-            { input: 'filtrarPares([1, 2, 3, 4, 5, 6])', expected: [2, 4, 6] },
-            { input: 'filtrarPares([10, 15, 20, 25])', expected: [10, 20] }
-        ],
-        onSuccess: (scene) => {
-            scene.feedback('¡Filtro desactivado! Has superado el desafío final.');
-            const barrier = obstacles.children.entries.find(o => o.getData('id') === 'array_1');
-            if (barrier) {
-                scene.emitSuccess(barrier.x, barrier.y);
-                barrier.destroy();
-            }
-            GameState.save('array_1');
-        }
-    },
-    {
-        id: 'recursion_1',
-        title: 'El Oráculo Infinito',
-        description: 'Escribe una función recursiva "factorial(n)" para calcular el factorial de un número.',
-        initialCode: 'function factorial(n) {\n  // Caso base y recursión\n}',
-        testCases: [
-            { input: 'factorial(5)', expected: 120 },
-            { input: 'factorial(3)', expected: 6 },
-            { input: 'factorial(0)', expected: 1 }
-        ],
-        onSuccess: (scene) => {
-            scene.feedback('¡Conocimiento obtenido! El Oráculo te deja pasar.');
-            const oracle = obstacles.children.entries.find(o => o.getData('id') === 'recursion_1');
-            if (oracle) {
-                scene.emitSuccess(oracle.x, oracle.y);
-                oracle.destroy();
-            }
-            GameState.save('recursion_1');
         }
     }
 ];
 
 function preload() {
-    // Generar una textura simple para partículas
     const graphics = this.make.graphics({ x: 0, y: 0, add: false });
     graphics.fillStyle(0xffffff, 1);
     graphics.fillRect(0, 0, 4, 4);
@@ -130,8 +79,8 @@ function preload() {
 
 function create() {
     gameScene = this;
+    isGameOver = false;
     
-    // Partículas para efectos
     this.particles = this.add.particles(0, 0, 'particle', {
         speed: { min: 50, max: 150 },
         scale: { start: 1, end: 0 },
@@ -142,55 +91,74 @@ function create() {
 
     this.add.grid(400, 300, 800, 600, 40, 40, 0x1a1a1a).setAltFillStyle(0x222222);
 
-    obstacles = this.physics.add.staticGroup();
+    // Paredes del Laberinto
+    walls = this.physics.add.staticGroup();
     
-    // Puerta 1
-    if (!GameState.completedChallenges.includes('door_1')) {
-        const door = this.add.rectangle(400, 300, 100, 20, 0xff5722);
-        this.physics.add.existing(door, true);
-        door.setData('id', 'door_1');
-        obstacles.add(door);
-    }
+    // Crear un laberinto simple
+    const createWall = (x, y, w, h, id = null) => {
+        const wall = this.add.rectangle(x, y, w, h, 0x333333);
+        this.physics.add.existing(wall, true);
+        if (id) wall.setData('id', id);
+        walls.add(wall);
+        return wall;
+    };
 
-    // Puente 1
-    const bridge = this.add.rectangle(600, 150, 40, 120, 0x4caf50);
-    bridge.setAlpha(GameState.completedChallenges.includes('bridge_1') ? 1 : 0.2);
-    bridge.setData('id', 'bridge_1');
-    obstacles.add(bridge);
-    bridge.body.enable = GameState.completedChallenges.includes('bridge_1');
+    // Bordes
+    createWall(400, 5, 800, 10);
+    createWall(400, 595, 800, 10);
+    createWall(5, 300, 10, 600);
+    createWall(795, 300, 10, 600);
 
-    // Barrera final
-    if (!GameState.completedChallenges.includes('array_1')) {
-        const barrier = this.add.rectangle(750, 250, 100, 10, 0x00bcd4);
-        this.physics.add.existing(barrier, true);
-        barrier.setData('id', 'array_1');
-        obstacles.add(barrier);
-    }
+    // Obstáculos internos (Laberinto)
+    createWall(200, 150, 10, 300);
+    createWall(400, 450, 10, 300);
+    createWall(600, 150, 10, 300);
+    
+    // Paredes que se abren con desafíos
+    createWall(100, 300, 200, 10, 'maze_wall_1');
+    createWall(500, 300, 200, 10, 'maze_wall_2');
 
-    // Oráculo (Recursión)
-    if (!GameState.completedChallenges.includes('recursion_1')) {
-        const oracle = this.add.triangle(750, 450, 0, 30, 15, 0, 30, 30, 0xe91e63);
-        this.physics.add.existing(oracle, true);
-        oracle.setData('id', 'recursion_1');
-        obstacles.add(oracle);
-    }
+    // Desafíos (Sensores)
+    obstacles = this.physics.add.staticGroup();
+    const trigger1 = this.add.circle(100, 250, 10, 0xffeb3b);
+    this.physics.add.existing(trigger1, true);
+    trigger1.setData('id', 'choice_1');
+    obstacles.add(trigger1);
 
-    player = this.add.circle(100, 300, 15, 0x4fc3f7);
+    const trigger2 = this.add.circle(500, 350, 10, 0xffeb3b);
+    this.physics.add.existing(trigger2, true);
+    trigger2.setData('id', 'choice_2');
+    obstacles.add(trigger2);
+
+    // Enemigo (El Virus)
+    enemy = this.add.circle(700, 500, 12, 0xf44336);
+    this.physics.add.existing(enemy);
+    enemy.body.setCollideWorldBounds(true);
+
+    player = this.add.circle(50, 50, 15, 0x4fc3f7);
     this.physics.add.existing(player);
     player.body.setCollideWorldBounds(true);
 
-    this.physics.add.collider(player, obstacles, (p, o) => {
+    // Colisiones
+    this.physics.add.collider(player, walls);
+    this.physics.add.collider(enemy, walls);
+    
+    this.physics.add.overlap(player, obstacles, (p, o) => {
         const challengeId = o.getData('id');
         if (challengeId && (!currentChallenge || currentChallenge.id !== challengeId)) {
-            loadChallenge(challengeId);
+            loadChoiceChallenge(challengeId);
         }
     });
 
+    this.physics.add.overlap(player, enemy, () => {
+        if (!isGameOver) gameOver(this);
+    });
+
     // Victoria
-    const goal = this.add.star(750, 100, 5, 10, 20, 0xffd700);
+    const goal = this.add.star(750, 550, 5, 10, 20, 0xffd700);
     this.physics.add.existing(goal);
     this.physics.add.overlap(player, goal, () => {
-        this.feedback('¡SINTAXIS RESTAURADA! Has completado SyntaxQuest.');
+        this.feedback('¡ESCAPE EXITOSO! Has burlado al Virus.');
         this.physics.pause();
     });
 
@@ -200,75 +168,73 @@ function create() {
         const text = document.getElementById('feedback-text');
         text.innerText = msg;
         text.style.color = isError ? '#f44336' : '#4caf50';
-        
-        if (isError) {
-            this.cameras.main.shake(200, 0.01);
-        } else {
-            this.cameras.main.flash(500, 76, 175, 80);
-        }
+        if (isError) this.cameras.main.shake(200, 0.01);
+        else this.cameras.main.flash(500, 76, 175, 80);
     };
 
     this.emitSuccess = (x, y) => {
         this.particles.emitParticleAt(x, y, 50);
     };
 
-    setupEditor();
+    setupChoiceUI(this);
 }
 
 function update() {
+    if (isGameOver) return;
+
     player.body.setVelocity(0);
-    if (cursors.left.isDown) player.body.setVelocityX(-200);
-    else if (cursors.right.isDown) player.body.setVelocityX(200);
-    if (cursors.up.isDown) player.body.setVelocityY(-200);
-    else if (cursors.down.isDown) player.body.setVelocityY(200);
+    const speed = 200;
+
+    if (cursors.left.isDown) player.body.setVelocityX(-speed);
+    else if (cursors.right.isDown) player.body.setVelocityX(speed);
+    if (cursors.up.isDown) player.body.setVelocityY(-speed);
+    else if (cursors.down.isDown) player.body.setVelocityY(speed);
+
+    // IA del Enemigo (Persecución simple)
+    const enemySpeed = 120;
+    this.physics.moveToObject(enemy, player, enemySpeed);
 }
 
-function loadChallenge(id) {
+function gameOver(scene) {
+    isGameOver = true;
+    scene.physics.pause();
+    player.setAlpha(0.5);
+    scene.feedback('EL VIRUS TE HA ATRAPADO. Reiniciando...', true);
+    setTimeout(() => {
+        scene.scene.restart();
+    }, 2000);
+}
+
+function loadChoiceChallenge(id) {
     const challenge = challenges.find(c => c.id === id);
-    if (!challenge || GameState.completedChallenges.includes(id)) return;
+    if (!challenge) return;
 
     currentChallenge = challenge;
     document.getElementById('challenge-title').innerText = challenge.title;
     document.getElementById('challenge-desc').innerText = challenge.description;
-    codeEditor.setValue(challenge.initialCode);
-    document.getElementById('test-cases-panel').innerHTML = '<strong>Tests listos...</strong>';
-    gameScene.feedback('Desafío cargado. Escribe tu solución.');
+    
+    const container = document.getElementById('code-editor-wrapper');
+    container.innerHTML = ''; // Limpiar editor
+    
+    challenge.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-button';
+        btn.innerText = opt.text;
+        btn.onclick = () => checkChoice(opt, gameScene);
+        container.appendChild(btn);
+    });
 }
 
-function setupEditor() {
-    // Inicializar CodeMirror 5 (usando el script de CDN)
-    const wrapper = document.getElementById('code-editor-wrapper');
-    codeEditor = CodeMirror(wrapper, {
-        value: "// Explora para encontrar desafíos",
-        mode: "javascript",
-        theme: "dracula",
-        lineNumbers: true,
-        tabSize: 2,
-        indentUnit: 2,
-        matchBrackets: true,
-        autoCloseBrackets: true
-    });
+function checkChoice(opt, scene) {
+    if (opt.correct) {
+        currentChallenge.onSuccess(scene);
+        document.getElementById('code-editor-wrapper').innerHTML = '<p style="color: #4caf50">Desafío Completado</p>';
+        currentChallenge = null;
+    } else {
+        scene.feedback('Respuesta incorrecta. ¡El virus se acerca!', true);
+    }
+}
 
-    document.getElementById('run-button').addEventListener('click', async () => {
-        if (!currentChallenge) {
-            gameScene.feedback('No hay un desafío activo.', true);
-            return;
-        }
-
-        const code = codeEditor.getValue();
-        gameScene.feedback('Validando código...');
-
-        try {
-            const result = await Validator.runCode(code, currentChallenge.testCases);
-            Validator.renderTestCases(result.results, result.logs);
-
-            if (result.allPassed) {
-                currentChallenge.onSuccess(gameScene);
-            } else {
-                gameScene.feedback('Algunos tests fallaron.', true);
-            }
-        } catch (err) {
-            gameScene.feedback(`Error: ${err.message}`, true);
-        }
-    });
+function setupChoiceUI(scene) {
+    document.getElementById('run-button').style.display = 'none'; // No necesitamos botón de ejecutar
 }
