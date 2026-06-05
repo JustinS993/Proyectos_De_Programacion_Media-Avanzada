@@ -10,6 +10,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`03-ejercicio-lista-tareas`](./03-ejercicio-lista-tareas) | Lista de tareas (CRUD en memoria) con tipado e interfaces |
 | [`04-mi-primera-app`](./04-mi-primera-app) | Mi primera aplicación móvil con Expo y React Native |
 | [`app-calculator`](./app-calculator) | Aplicación de calculadora completa con Expo, Hooks y Haptics |
+| [`SyntaxQuest`](./SyntaxQuest) | Videojuego educativo 2D de lógica y sintaxis con Phaser 3 |
 
 ## Stack común
 
@@ -73,3 +74,33 @@ cd app-calculator
 npm install
 npx expo start
 ```
+
+---
+
+## SyntaxQuest (Web - Phaser 3)
+
+Videojuego educativo web en 2D donde los jugadores resuelven acertijos de sintaxis de programación para escapar de un laberinto digital mientras son perseguidos por un virus.
+
+### Qué practica
+
+- **Motor de Juego 2D**: Uso de **Phaser 3** para físicas, colisiones, sistemas de partículas y animaciones de cámara.
+- **IA de Persecución**: Implementación de un enemigo dinámico que sigue al jugador por el laberinto.
+- **The Judge (Web Workers)**: Ejecución segura y aislada de código JavaScript para validar desafíos.
+- **Desafíos de Sintaxis**: Sistema de selección múltiple integrado en una terminal retro.
+- **Arquitectura de Niveles**: Diseño de laberinto con conectividad garantizada y rutas de escape estratégicas.
+- **Feedback Visual**: Efectos de sacudida de cámara (shake), destellos (flash) y sistemas de partículas.
+
+### Cómo ejecutarlo
+
+```bash
+# Solo necesitas un servidor web simple
+# Si tienes Python:
+python -m http.server 8000
+# Luego abre http://localhost:8000/SyntaxQuest/
+```
+
+### Controles
+
+- **W, A, S, D** o **Flechas**: Mover al personaje.
+- **Interacción**: Colisionar con los sensores amarillos para activar desafíos.
+- **Ratón**: Seleccionar la respuesta correcta en la terminal.
