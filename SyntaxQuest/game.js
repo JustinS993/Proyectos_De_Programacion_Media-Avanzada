@@ -51,7 +51,10 @@ const challenges = [
         onSuccess: (scene) => {
             scene.feedback('¡Puerta abierta! Código verificado.');
             const door = obstacles.children.entries.find(o => o.getData('id') === 'door_1');
-            if (door) door.destroy();
+            if (door) {
+                scene.emitSuccess(door.x, door.y);
+                door.destroy();
+            }
             GameState.save('door_1');
         }
     },
@@ -69,6 +72,7 @@ const challenges = [
             scene.feedback('¡Puente extendido! Los tests pasaron.');
             const bridge = obstacles.children.entries.find(o => o.getData('id') === 'bridge_1');
             if (bridge) {
+                scene.emitSuccess(bridge.x, bridge.y);
                 bridge.setAlpha(1);
                 bridge.body.enable = true;
             }
@@ -87,7 +91,10 @@ const challenges = [
         onSuccess: (scene) => {
             scene.feedback('¡Filtro desactivado! Has superado el desafío final.');
             const barrier = obstacles.children.entries.find(o => o.getData('id') === 'array_1');
-            if (barrier) barrier.destroy();
+            if (barrier) {
+                scene.emitSuccess(barrier.x, barrier.y);
+                barrier.destroy();
+            }
             GameState.save('array_1');
         }
     },
@@ -104,17 +111,35 @@ const challenges = [
         onSuccess: (scene) => {
             scene.feedback('¡Conocimiento obtenido! El Oráculo te deja pasar.');
             const oracle = obstacles.children.entries.find(o => o.getData('id') === 'recursion_1');
-            if (oracle) oracle.destroy();
+            if (oracle) {
+                scene.emitSuccess(oracle.x, oracle.y);
+                oracle.destroy();
+            }
             GameState.save('recursion_1');
         }
     }
 ];
 
-function preload() {}
+function preload() {
+    // Generar una textura simple para partículas
+    const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillRect(0, 0, 4, 4);
+    graphics.generateTexture('particle', 4, 4);
+}
 
 function create() {
     gameScene = this;
     
+    // Partículas para efectos
+    this.particles = this.add.particles(0, 0, 'particle', {
+        speed: { min: 50, max: 150 },
+        scale: { start: 1, end: 0 },
+        lifespan: 600,
+        gravityY: 100,
+        emitting: false
+    });
+
     this.add.grid(400, 300, 800, 600, 40, 40, 0x1a1a1a).setAltFillStyle(0x222222);
 
     obstacles = this.physics.add.staticGroup();
@@ -175,7 +200,16 @@ function create() {
         const text = document.getElementById('feedback-text');
         text.innerText = msg;
         text.style.color = isError ? '#f44336' : '#4caf50';
-        if (!isError) this.cameras.main.flash(500, 76, 175, 80);
+        
+        if (isError) {
+            this.cameras.main.shake(200, 0.01);
+        } else {
+            this.cameras.main.flash(500, 76, 175, 80);
+        }
+    };
+
+    this.emitSuccess = (x, y) => {
+        this.particles.emitParticleAt(x, y, 50);
     };
 
     setupEditor();
