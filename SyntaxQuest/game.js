@@ -151,27 +151,35 @@ function create() {
     createWall(5, 300, 10, 600);
     createWall(795, 300, 10, 600);
 
-    // Laberinto más complejo
-    createWall(150, 100, 10, 200);
-    createWall(150, 400, 10, 200);
-    createWall(300, 250, 10, 300);
-    createWall(450, 100, 10, 200);
-    createWall(450, 500, 10, 200);
-    createWall(600, 300, 10, 400);
+    // Laberinto rediseñado para garantizar conectividad
+    // Estructura de "Pasillos Abiertos"
+    
+    // Columnas principales con aperturas
+    createWall(150, 150, 10, 200); // Superior izquierda
+    createWall(150, 450, 10, 200); // Inferior izquierda
+    
+    createWall(300, 300, 10, 300); // Centro izquierda
+    
+    createWall(450, 150, 10, 200); // Centro derecha arriba
+    createWall(450, 450, 10, 200); // Centro derecha abajo
+    
+    createWall(600, 300, 10, 300); // Derecha
+    
+    // Vigas horizontales con huecos
+    createWall(75, 250, 150, 10);
+    createWall(225, 350, 150, 10);
+    createWall(375, 150, 150, 10);
+    createWall(525, 450, 150, 10);
+    createWall(700, 250, 200, 10);
 
-    createWall(75, 200, 150, 10);
-    createWall(225, 400, 150, 10);
-    createWall(375, 100, 150, 10);
-    createWall(525, 500, 150, 10);
-    createWall(700, 300, 200, 10);
+    // Paredes de bloqueo (ahora son más pequeñas para no cerrar habitaciones enteras)
+    // Se colocan en puntos estratégicos pero dejando rutas alternativas de escape
+    createWall(150, 300, 10, 100, 'maze_wall_1'); // Bloquea un atajo a la izquierda
+    createWall(450, 300, 10, 100, 'maze_wall_2'); // Bloquea el centro
+    createWall(600, 500, 10, 100, 'maze_wall_3'); // Bloquea el acceso directo a la meta inferior
+    createWall(600, 100, 10, 100, 'maze_wall_4'); // Bloquea el acceso superior derecho
 
-    // Paredes de bloqueo
-    createWall(100, 500, 200, 10, 'maze_wall_1');
-    createWall(400, 300, 200, 10, 'maze_wall_2');
-    createWall(700, 100, 200, 10, 'maze_wall_3');
-    createWall(700, 500, 200, 10, 'maze_wall_4');
-
-    // Desafíos
+    // Desafíos - Posicionados en "bahías" accesibles
     obstacles = this.physics.add.staticGroup();
     const addTrigger = (x, y, id) => {
         const t = this.add.circle(x, y, 10, 0xffeb3b);
@@ -181,12 +189,12 @@ function create() {
         return t;
     };
 
-    addTrigger(80, 80, 'choice_1');
-    addTrigger(220, 520, 'choice_2');
-    addTrigger(380, 80, 'choice_3');
-    addTrigger(520, 420, 'choice_4');
+    addTrigger(75, 150, 'choice_1');  // Esquina superior izquierda
+    addTrigger(225, 525, 'choice_2'); // Abajo izquierda
+    addTrigger(525, 75, 'choice_3');  // Arriba derecha
+    addTrigger(375, 525, 'choice_4'); // Abajo centro
 
-    enemy = this.add.circle(700, 500, 12, 0xf44336);
+    enemy = this.add.circle(700, 100, 12, 0xf44336); // Movido para no empezar encima de la meta
     this.physics.add.existing(enemy);
     enemy.body.setCollideWorldBounds(true);
 
