@@ -11,6 +11,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`04-mi-primera-app`](./04-mi-primera-app) | Mi primera aplicación móvil con Expo y React Native |
 | [`app-calculator`](./app-calculator) | Aplicación de calculadora completa con Expo, Hooks y Haptics |
 | [`SyntaxQuest`](./SyntaxQuest) | Videojuego educativo 2D de lógica y sintaxis con Phaser 3 |
+| [`05-sorting-simulator`](./05-sorting-simulator) | Visualizador interactivo de algoritmos de ordenamiento con React y Framer Motion |
 
 ## Stack común
 
@@ -104,3 +105,25 @@ python -m http.server 8000
 - **W, A, S, D** o **Flechas**: Mover al personaje.
 - **Interacción**: Colisionar con los sensores amarillos para activar desafíos.
 - **Ratón**: Seleccionar la respuesta correcta en la terminal.
+
+---
+
+## 05 — Sorting Simulator (Web - React)
+
+Visualizador interactivo de algoritmos de ordenamiento que permite entender cómo funcionan estructuras de datos fundamentales de forma gráfica y animada.
+
+### Qué practica
+
+- **Visualización Asíncrona**: Uso de `async/await` y `Promise` para controlar el flujo de las animaciones en tiempo real.
+- **Animaciones de Interfaz**: Implementación de **Framer Motion** para transiciones suaves entre estados de las barras.
+- **Lógica de Algoritmos**: Implementación manual de Bubble Sort, Selection Sort y más.
+- **Control de Estados Complejos**: Gestión de colores dinámicos (comparando, intercambiando, ordenado) y cancelación de procesos con `AbortController`.
+- **UI Moderna**: Diseño con **Tailwind CSS**, modo oscuro y controles interactivos de velocidad.
+
+### Cómo ejecutarlo
+
+```bash
+cd 05-sorting-simulator
+npm install
+npm run dev
+```
