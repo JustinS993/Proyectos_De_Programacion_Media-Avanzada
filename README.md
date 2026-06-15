@@ -12,6 +12,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`app-calculator`](./app-calculator) | Aplicación de calculadora completa con Expo, Hooks y Haptics |
 | [`SyntaxQuest`](./SyntaxQuest) | Videojuego educativo 2D de lógica y sintaxis con Phaser 3 |
 | [`05-sorting-simulator`](./05-sorting-simulator) | Visualizador interactivo de algoritmos de ordenamiento con React y Framer Motion |
+| [`06-among-us-wiki`](./06-among-us-wiki) | Wiki web sobre Among Us (juego y serie) con HTML y CSS |
 
 ## Stack común
 
@@ -127,3 +128,21 @@ cd 05-sorting-simulator
 npm install
 npm run dev
 ```
+
+---
+
+## 06 — Among Us Wiki (Web - HTML & CSS)
+
+Página web estática estilo wiki dedicada a Among Us, cubriendo tanto el juego como la serie animada.
+
+### Qué practica
+
+- **HTML Semántico**: Uso de tags como `header`, `nav`, `section`, `article` y `footer`.
+- **CSS Moderno**: Grid, Flexbox, gradients, sombras y animaciones.
+- **Responsive Design**: Diseño adaptable a dispositivos móviles y desktop.
+- **Tema Personalizado**: Estética inspirada en los colores y ambiente de Among Us.
+
+### Cómo ejecutarlo
+
+Solo necesitas abrir el archivo `index.html` en cualquier navegador web moderno.
+
