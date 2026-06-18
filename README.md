@@ -13,6 +13,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`SyntaxQuest`](./SyntaxQuest) | Videojuego educativo 2D de lógica y sintaxis con Phaser 3 |
 | [`05-sorting-simulator`](./05-sorting-simulator) | Visualizador interactivo de algoritmos de ordenamiento con React y Framer Motion |
 | [`06-among-us-wiki`](./06-among-us-wiki) | Wiki web sobre Among Us (juego y serie) con HTML y CSS |
+| [`07-spot-the-impostor`](./07-spot-the-impostor) | Juego de "Encuentra al Impostor" de Among Us con Phaser 3 |
 
 ## Stack común
 
@@ -145,4 +146,22 @@ Página web estática estilo wiki dedicada a Among Us, cubriendo tanto el juego 
 ### Cómo ejecutarlo
 
 Solo necesitas abrir el archivo `index.html` en cualquier navegador web moderno.
+
+---
+
+## 07 — Spot the Impostor! (Web - Phaser 3)
+
+Juego interactivo de Among Us donde tienes que hacer clic en los impostores rojos para ganar puntos antes de que se acabe el tiempo!
+
+### Qué practica
+
+- **Motor de Juego 2D**: Uso de **Phaser 3** para escenas, sprites y física.
+- **Generación Dinámica de Gráficos**: Creación de sprites de crewmates/impostores directamente con código.
+- **Gestión de Escenas**: Start, Play y Game Over.
+- **Contadores y Temporizadores**: Score y tiempo limitado.
+- **Interacción del Usuario**: Clics y estados de puntero.
+
+### Cómo ejecutarlo
+
+Solo necesitas un servidor web simple y abrir `index.html`!
 
