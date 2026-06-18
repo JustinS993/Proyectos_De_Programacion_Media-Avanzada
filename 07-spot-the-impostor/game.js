@@ -1,23 +1,3 @@
-const config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    backgroundColor: '#1a1a2e',
-    scene: [StartScene, PlayScene, GameOverScene],
-    physics: {
-        default: 'arcade',
-        arcade: {
-            debug: false
-        }
-    },
-    scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH
-    }
-};
-
-const game = new Phaser.Game(config);
-
 class StartScene extends Phaser.Scene {
     constructor() {
         super('start-scene');
@@ -256,3 +236,23 @@ class GameOverScene extends Phaser.Scene {
         });
     }
 }
+
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    backgroundColor: '#1a1a2e',
+    scene: [StartScene, PlayScene, GameOverScene],
+    physics: {
+        default: 'arcade',
+        arcade: {
+            debug: false
+        }
+    },
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    }
+};
+
+const game = new Phaser.Game(config);
