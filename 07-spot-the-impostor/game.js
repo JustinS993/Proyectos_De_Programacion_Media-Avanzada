@@ -23,10 +23,6 @@ function randomInRange(min, max) {
     return Phaser.Math.Between(min, max);
 }
 
-function randomElement(array) {
-    return Phaser.Math.RND.pick(array);
-}
-
 // --- Boot/Preload Scene ---
 class PreloadScene extends Phaser.Scene {
     constructor() {
@@ -34,15 +30,6 @@ class PreloadScene extends Phaser.Scene {
     }
 
     preload() {
-        // Load background - Space themed
-        this.load.image('space-bg', 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80');
-        
-        // Load Crewmate sprite (PNG placeholder - Among Us style blue)
-        this.load.image('crewmate', 'https://placehold.co/96x96/2e86de/ffffff?text=🛸');
-        
-        // Load Impostor sprite (PNG placeholder - Among Us style red)
-        this.load.image('impostor', 'https://placehold.co/96x96/c70d3a/ffffff?text=👾');
-        
         // Loading text
         const loadingText = this.add.text(CONFIG.WIDTH/2, CONFIG.HEIGHT/2, 'Cargando...', {
             fontSize: '40px',
@@ -50,10 +37,37 @@ class PreloadScene extends Phaser.Scene {
             stroke: '#000',
             strokeThickness: 4
         }).setOrigin(0.5);
+
+        // Generate sprites programmatically to avoid loading issues!
+        this.generateCrewmate();
+        this.generateImpostor();
         
+        // Load background - Space themed (more reliable URL)
+        this.load.image('space-bg', 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80&auto=format&fit=crop');
+
         this.load.on('complete', () => {
             this.scene.start('start-scene');
         });
+    }
+
+    generateCrewmate() {
+        const gfx = this.make.graphics({ add: false });
+        gfx.fillStyle(0x2e86de, 1);
+        gfx.fillEllipse(CONFIG.SPRITE_SIZE/2, CONFIG.SPRITE_SIZE/2, 38, 44); // Body
+        gfx.fillStyle(0x2e86de, 0.8);
+        gfx.fillEllipse(8, CONFIG.SPRITE_SIZE/2, 14, 24); // Backpack
+        gfx.generateTexture('crewmate', CONFIG.SPRITE_SIZE, CONFIG.SPRITE_SIZE);
+        gfx.destroy();
+    }
+
+    generateImpostor() {
+        const gfx = this.make.graphics({ add: false });
+        gfx.fillStyle(0xc70d3a, 1);
+        gfx.fillEllipse(CONFIG.SPRITE_SIZE/2, CONFIG.SPRITE_SIZE/2, 38, 44); // Body
+        gfx.fillStyle(0xc70d3a, 0.8);
+        gfx.fillEllipse(8, CONFIG.SPRITE_SIZE/2, 14, 24); // Backpack
+        gfx.generateTexture('impostor', CONFIG.SPRITE_SIZE, CONFIG.SPRITE_SIZE);
+        gfx.destroy();
     }
 }
 
