@@ -2,7 +2,7 @@
 const CONFIG = {
     WIDTH: 800,
     HEIGHT: 600,
-    BACKGROUND_COLOR: '#1a1a2e',
+    BACKGROUND_COLOR: '#0d1117',
     INITIAL_TIME: 30,
     POINTS_PER_IMPOSTOR: 15,
     POINTS_LOST_PER_CREWMATE: 10,
@@ -10,10 +10,8 @@ const CONFIG = {
     SPAWN_INTERVAL: 1200,
     MIN_SPAWN_COUNT: 2,
     MAX_SPAWN_COUNT: 4,
-    IMPOSTOR_RATIO: 0.28, // 28% chance of impostor, more predictable
-    CREWMATE_COLORS: ['#2e86de', '#27ae60', '#9b59b6', '#f39c12', '#3498db'],
-    IMPOSTOR_COLORS: ['#c70d3a', '#ff6b6b'],
-    SPRITE_SIZE: 50,
+    IMPOSTOR_RATIO: 0.28, // 28% chance of impostor
+    SPRITE_SIZE: 48,
     MOVEMENT_SPEED: {
         MIN: 80,
         MAX: 130
@@ -29,6 +27,36 @@ function randomElement(array) {
     return Phaser.Math.RND.pick(array);
 }
 
+// --- Boot/Preload Scene ---
+class PreloadScene extends Phaser.Scene {
+    constructor() {
+        super('preload-scene');
+    }
+
+    preload() {
+        // Load background - Space themed
+        this.load.image('space-bg', 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80');
+        
+        // Load Crewmate sprite (PNG placeholder - Among Us style blue)
+        this.load.image('crewmate', 'https://placehold.co/96x96/2e86de/ffffff?text=🛸');
+        
+        // Load Impostor sprite (PNG placeholder - Among Us style red)
+        this.load.image('impostor', 'https://placehold.co/96x96/c70d3a/ffffff?text=👾');
+        
+        // Loading text
+        const loadingText = this.add.text(CONFIG.WIDTH/2, CONFIG.HEIGHT/2, 'Cargando...', {
+            fontSize: '40px',
+            color: '#ffffff',
+            stroke: '#000',
+            strokeThickness: 4
+        }).setOrigin(0.5);
+        
+        this.load.on('complete', () => {
+            this.scene.start('start-scene');
+        });
+    }
+}
+
 // --- Start Scene ---
 class StartScene extends Phaser.Scene {
     constructor() {
@@ -36,24 +64,27 @@ class StartScene extends Phaser.Scene {
     }
 
     create() {
+        // Add space background
+        this.add.image(0, 0, 'space-bg').setOrigin(0, 0).setAlpha(0.35);
+
         // Title
-        this.add.text(CONFIG.WIDTH / 2, 150, 'Spot the Impostor!', {
-            fontSize: '72px',
-            color: '#c70d3a',
+        this.add.text(CONFIG.WIDTH / 2, 130, 'Spot the Impostor!', {
+            fontSize: '76px',
+            color: '#ff6b6b',
             fontStyle: 'bold',
             stroke: '#000',
             strokeThickness: 8
         }).setOrigin(0.5);
 
         // Instructions
-        this.add.text(CONFIG.WIDTH / 2, 280, '🟥 Haz clic solo en los IMPOSTORES ROJOS!', {
-            fontSize: '24px',
+        this.add.text(CONFIG.WIDTH / 2, 260, '🟥 Haz clic solo en los IMPOSTORES ROJOS!', {
+            fontSize: '26px',
             color: '#ffffff',
             stroke: '#000',
             strokeThickness: 3
         }).setOrigin(0.5);
         
-        this.add.text(CONFIG.WIDTH / 2, 330, '🟩 NO hagas clic en los CREWMATES (perderás puntos!)', {
+        this.add.text(CONFIG.WIDTH / 2, 310, '🟩 NO hagas clic en los CREWMATES (perderás puntos!)', {
             fontSize: '20px',
             color: '#dfe6e9',
             stroke: '#000',
@@ -61,11 +92,11 @@ class StartScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // Start Button
-        const startButton = this.add.text(CONFIG.WIDTH / 2, 480, 'Jugar Ahora!', {
-            fontSize: '52px',
+        const startButton = this.add.text(CONFIG.WIDTH / 2, 470, 'Jugar Ahora!', {
+            fontSize: '56px',
             color: '#ffffff',
             backgroundColor: '#c70d3a',
-            padding: { x: 40, y: 18 },
+            padding: { x: 45, y: 20 },
             borderRadius: 15
         }).setOrigin(0.5).setInteractive();
 
@@ -96,6 +127,9 @@ class PlayScene extends Phaser.Scene {
     }
 
     create() {
+        // Add space background
+        this.add.image(0, 0, 'space-bg').setOrigin(0, 0).setAlpha(0.25);
+
         this.resetGameState();
         this.updateUI();
         
@@ -145,45 +179,15 @@ class PlayScene extends Phaser.Scene {
             const x = randomInRange(CONFIG.SPRITE_SIZE, CONFIG.WIDTH - CONFIG.SPRITE_SIZE);
             const y = randomInRange(CONFIG.SPRITE_SIZE, CONFIG.HEIGHT - CONFIG.SPRITE_SIZE);
             const isImpostor = Math.random() < CONFIG.IMPOSTOR_RATIO;
-            this.spawnCrewmate(x, y, isImpostor);
+            this.spawnCharacter(x, y, isImpostor);
         }
     }
 
-    createSpriteTexture(isImpostor) {
-        const colors = isImpostor ? CONFIG.IMPOSTOR_COLORS : CONFIG.CREWMATE_COLORS;
-        const color = randomElement(colors);
-        
-        const graphics = this.add.graphics();
-        graphics.fillStyle(Number(color.replace('#', '0x')), 1);
-        
-        // Draw crewmate body
-        graphics.fillEllipse(
-            CONFIG.SPRITE_SIZE / 2,
-            CONFIG.SPRITE_SIZE / 2,
-            CONFIG.SPRITE_SIZE * 0.8,
-            CONFIG.SPRITE_SIZE * 0.9
-        );
-        
-        // Draw backpack
-        graphics.fillEllipse(
-            CONFIG.SPRITE_SIZE * 0.05,
-            CONFIG.SPRITE_SIZE / 2,
-            CONFIG.SPRITE_SIZE * 0.3,
-            CONFIG.SPRITE_SIZE * 0.5
-        );
-
+    spawnCharacter(x, y, isImpostor) {
         const textureKey = isImpostor ? 'impostor' : 'crewmate';
-        graphics.generateTexture(textureKey, CONFIG.SPRITE_SIZE, CONFIG.SPRITE_SIZE);
-        graphics.destroy();
-        
-        return textureKey;
-    }
-
-    spawnCrewmate(x, y, isImpostor) {
-        const textureKey = this.createSpriteTexture(isImpostor);
         const sprite = this.physics.add.sprite(x, y, textureKey);
         
-        sprite.setScale(0.75 + Math.random() * 0.5);
+        sprite.setScale(0.6 + Math.random() * 0.4);
         sprite.setData('isImpostor', isImpostor);
         sprite.setInteractive();
 
@@ -230,7 +234,7 @@ class PlayScene extends Phaser.Scene {
         
         this.tweens.add({
             targets: sprite,
-            scale: 1.6,
+            scale: 1.7,
             alpha: 0,
             duration: 250,
             onComplete: () => this.removeSprite(sprite)
@@ -276,25 +280,28 @@ class GameOverScene extends Phaser.Scene {
     }
 
     create() {
+        // Add space background
+        this.add.image(0, 0, 'space-bg').setOrigin(0, 0).setAlpha(0.3);
+
         // Title
-        this.add.text(CONFIG.WIDTH / 2, 140, 'Game Over!', {
-            fontSize: '76px',
-            color: '#c70d3a',
+        this.add.text(CONFIG.WIDTH / 2, 130, 'Game Over!', {
+            fontSize: '78px',
+            color: '#ff6b6b',
             fontStyle: 'bold',
             stroke: '#000',
             strokeThickness: 8
         }).setOrigin(0.5);
 
         // Score
-        this.add.text(CONFIG.WIDTH / 2, 280, `Puntuación Final:`, {
-            fontSize: '36px',
+        this.add.text(CONFIG.WIDTH / 2, 270, `Puntuación Final:`, {
+            fontSize: '38px',
             color: '#dfe6e9',
             stroke: '#000',
             strokeThickness: 3
         }).setOrigin(0.5);
         
-        this.add.text(CONFIG.WIDTH / 2, 340, `${this.finalScore}`, {
-            fontSize: '80px',
+        this.add.text(CONFIG.WIDTH / 2, 335, `${this.finalScore}`, {
+            fontSize: '85px',
             color: this.finalScore >= 100 ? '#27ae60' : '#f39c12',
             fontStyle: 'bold',
             stroke: '#000',
@@ -302,11 +309,11 @@ class GameOverScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // Restart Button
-        const restartButton = this.add.text(CONFIG.WIDTH / 2, 480, 'Jugar de Nuevo', {
-            fontSize: '48px',
+        const restartButton = this.add.text(CONFIG.WIDTH / 2, 475, 'Jugar de Nuevo', {
+            fontSize: '50px',
             color: '#ffffff',
             backgroundColor: '#2e86de',
-            padding: { x: 35, y: 16 },
+            padding: { x: 38, y: 17 },
             borderRadius: 12
         }).setOrigin(0.5).setInteractive();
 
@@ -332,7 +339,7 @@ const gameConfig = {
     width: CONFIG.WIDTH,
     height: CONFIG.HEIGHT,
     backgroundColor: CONFIG.BACKGROUND_COLOR,
-    scene: [StartScene, PlayScene, GameOverScene],
+    scene: [PreloadScene, StartScene, PlayScene, GameOverScene],
     physics: {
         default: 'arcade',
         arcade: {
