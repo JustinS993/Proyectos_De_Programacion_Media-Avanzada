@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useFinance } from '../context/FinanceContext';
+import { useFinance, TransactionType } from '../context/FinanceContext';
 
 const categories = ['Salario', 'Freelance', 'Comida', 'Transporte', 'Entretenimiento', 'Salud', 'Ropa', 'Otros'];
 
 const TransactionForm: React.FC = () => {
-  const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [type, setType] = useState<TransactionType>('expense');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('Otros');
