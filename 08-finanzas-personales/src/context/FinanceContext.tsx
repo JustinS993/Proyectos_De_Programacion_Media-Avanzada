@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 
-export type TransactionType = 'income' | 'expense';
+type TransactionType = 'income' | 'expense';
 
-export interface Transaction {
+interface Transaction {
   id: string;
   type: TransactionType;
   category: string;

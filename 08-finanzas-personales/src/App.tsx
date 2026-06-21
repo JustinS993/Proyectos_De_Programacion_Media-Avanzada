@@ -1,11 +1,11 @@
+import React from 'react';
 import { FinanceProvider, useFinance } from './context/FinanceContext';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
-import Charts from './components/Charts';
 
-const Dashboard = () => {
+const App: React.FC = () => {
   const { totalIncome, totalExpenses, balance } = useFinance();
-  
+
   return (
     <div className="min-h-screen bg-bg-primary p-6">
       <div className="max-w-6xl mx-auto">
@@ -33,9 +33,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Charts */}
-        <Charts />
-
         <div className="mt-8 grid md:grid-cols-3 gap-6">
           <div className="md:col-span-1">
             <TransactionForm />
@@ -49,12 +46,10 @@ const Dashboard = () => {
   );
 };
 
-function App() {
-  return (
-    <FinanceProvider>
-      <Dashboard />
-    </FinanceProvider>
-  );
-}
+const WrappedApp = () => (
+  <FinanceProvider>
+    <App />
+  </FinanceProvider>
+);
 
-export default App;
+export default WrappedApp;

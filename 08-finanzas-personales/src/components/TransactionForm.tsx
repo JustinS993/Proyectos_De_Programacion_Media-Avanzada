@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { useFinance, TransactionType } from '../context/FinanceContext';
+import { useFinance } from '../context/FinanceContext';
+
+type TransactionType = 'income' | 'expense';
 
 const categories = ['Salario', 'Freelance', 'Comida', 'Transporte', 'Entretenimiento', 'Salud', 'Ropa', 'Otros'];
 
