@@ -14,6 +14,8 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`05-sorting-simulator`](./05-sorting-simulator) | Visualizador interactivo de algoritmos de ordenamiento con React y Framer Motion |
 | [`06-among-us-wiki`](./06-among-us-wiki) | Wiki web sobre Among Us (juego y serie) con HTML y CSS |
 | [`07-spot-the-impostor`](./07-spot-the-impostor) | Juego de "Encuentra al Impostor" de Among Us con Phaser 3 |
+| [`08-finanzas-personales`](./08-finanzas-personales) | App de finanzas personales con React y TypeScript |
+| [`09-ahorcado-pwa`](./09-ahorcado-pwa) | Juego del Ahorcado como PWA con Vanilla JS |
 
 ## Stack común
 
@@ -164,4 +166,28 @@ Juego interactivo de Among Us donde tienes que hacer clic en los impostores rojo
 ### Cómo ejecutarlo
 
 Solo necesitas un servidor web simple y abrir `index.html`!
+
+---
+
+## 09 — Ahorcado PWA (Web - Vanilla JS)
+
+Juego clásico del ahorcado con diccionario por categorías, puntuación, récords y soporte PWA (instalable y offline).
+
+### Qué practica
+
+- **PWA**: `manifest.json`, Service Workers y caché offline.
+- **Vanilla JavaScript**: Lógica del juego, canvas y DOM sin frameworks.
+- **Diccionario por categorías**: Programación, videojuegos, animales, países y deportes.
+- **Puntuación y récords**: Persistencia con `localStorage`.
+- **Animaciones**: Feedback visual al acertar o fallar letras.
+- **Diseño responsive**: Adaptado a móvil y escritorio.
+
+### Cómo ejecutarlo
+
+```bash
+cd 09-ahorcado-pwa
+npx serve .
+```
+
+Luego abre la URL que muestre el servidor (ej. `http://localhost:3000`).
 
