@@ -16,6 +16,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`07-spot-the-impostor`](./07-spot-the-impostor) | Juego de "Encuentra al Impostor" de Among Us con Phaser 3 |
 | [`08-finanzas-personales`](./08-finanzas-personales) | App de finanzas personales con React y TypeScript |
 | [`09-ahorcado-pwa`](./09-ahorcado-pwa) | Juego del Ahorcado como PWA con Vanilla JS |
+| [`10-recetas-expo`](./10-recetas-expo) | App de recetas con React Native, Expo y Spoonacular API |
 
 ## Stack común
 
@@ -190,4 +191,41 @@ npx serve .
 ```
 
 Luego abre la URL que muestre el servidor (ej. `http://localhost:3000`).
+
+---
+
+## 10 — App de Recetas (Móvil - React Native & Expo)
+
+Aplicación móvil de recetas con búsqueda, favoritos, filtros por dieta y lista de compras automática, integrada con la API de Spoonacular.
+
+### Qué practica
+
+- **React Native y Expo**: Desarrollo multiplataforma (iOS/Android) con componentes nativos.
+- **Navegación**: Uso de `@react-navigation/native` con navegador de pestañas y stack.
+- **Contexto Global**: `useContext` para gestionar favoritos y lista de compras.
+- **Persistencia**: `AsyncStorage` para almacenar datos locales.
+- **Integración con API**: Consumo de la API de Spoonacular para buscar recetas e ingredientes.
+- **Diseño Responsive**: Interfaz moderna con estilos personalizados.
+
+### Funcionalidades
+
+- Búsqueda de recetas por nombre e ingredientes
+- Filtros por dieta: vegetariano, vegano, sin gluten y sin lácteos
+- Guardar recetas como favoritas
+- Lista de compras automática (agregar/eliminar/verificar items)
+- Vista detallada de recetas con instrucciones e ingredientes
+
+### Cómo ejecutarlo
+
+1. Obtén una API Key gratuita en [Spoonacular](https://spoonacular.com/food-api/console#Profile)
+2. Agrega tu API Key en `src/services/spoonacular.ts`
+3. Ejecuta:
+
+```bash
+cd 10-recetas-expo
+npm install
+npm run android  # Para Android
+npm run ios      # Para iOS (solo macOS)
+npm run web      # Para navegador web
+```
 
