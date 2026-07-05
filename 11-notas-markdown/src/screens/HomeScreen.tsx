@@ -180,7 +180,10 @@ export const HomeScreen: React.FC = () => {
               {filteredNotes.map(note => (
                 <div
                   key={note.id}
-                  onClick={() => { setSelectedNote(note); setIsEditing(false) }}
+                  onClick={() => {
+                    setSelectedNote(note);
+                    setIsEditing(false);
+                  }}
                   className={`p-3 rounded-lg cursor-pointer transition-colors ${selectedNote?.id === note.id ? 'bg-purple-100 border border-purple-300' : 'bg-gray-50 hover:bg-gray-100'}`}
                 >
                   <h4 className="font-medium text-gray-800 truncate">{note.title}</h4>
@@ -254,7 +257,15 @@ export const HomeScreen: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
               <div />
               <button
-                onClick={() => { setEditTitle(selectedNote.title); setEditContent(selectedNote.content); setEditFolderId(selectedNote.folder_id); setIsEditing(true) }}
+                onClick={() => {
+                  if (selectedNote) {
+                    setEditTitle(selectedNote.title);
+                    setEditContent(selectedNote.content);
+                    setEditFolderId(selectedNote.folder_id);
+                    setIsEditing(true);
+                    setIsNewNote(false);
+                  }
+                }}
                 className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-lg hover:opacity-90"
               >
                 ✏️ Editar
