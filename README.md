@@ -18,6 +18,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`09-ahorcado-pwa`](./09-ahorcado-pwa) | Juego del Ahorcado como PWA con Vanilla JS |
 | [`10-recetas-expo`](./10-recetas-expo) | App de recetas con React Native, Expo y Spoonacular API |
 | [`11-notas-markdown`](./11-notas-markdown) | App de notas con Markdown, autenticación y Supabase |
+| [`12-red-social`](./12-red-social) | Red social profesional con React, Node, PostgreSQL, Redis y Socket.io |
 
 ## Stack común
 
@@ -305,4 +306,60 @@ Aplicación de notas con autenticación, soporte para Markdown, carpetas y búsq
    npm install
    npm run dev
    ```
+
+---
+
+## 12 — Red Social Profesional
+
+Red social moderna y completa con React, TypeScript, Node.js, PostgreSQL, Redis y Socket.io.
+
+### Qué practica
+
+- **Full Stack**: Desarrollo completo de aplicación web profesional
+- **React 19 + TypeScript**: Frontend moderno y tipado
+- **Node.js + Express**: API REST robusta
+- **PostgreSQL + Prisma**: Base de datos relacional y ORM
+- **Redis**: Caché para optimizar rendimiento
+- **Socket.io**: Chat en tiempo real y notificaciones
+- **React Query**: Manejo de estado del servidor
+- **Tailwind CSS**: Interfaz moderna y responsive
+- **Arquitectura cliente-servidor**: Separación clara entre frontend y backend
+
+### Funcionalidades
+
+- 🔐 **Autenticación**: Registro e inicio de sesión con JWT
+- 👤 **Perfiles de usuarios**: Avatar, biografía, seguidores y seguidos
+- 📝 **Publicaciones**: Texto, imágenes, videos con soporte Markdown
+- ❤️ **Interacciones**: Likes, comentarios, compartir y guardar
+- 💬 **Chat en tiempo real**: Mensajes instantáneos con Socket.io
+- 🔔 **Notificaciones**: Notificaciones de interacciones
+- 🎉 **Stories**: Historias temporales
+- 🔍 **Búsqueda**: Buscar usuarios y contenido
+- 📱 **Responsive**: Diseño adaptable a móviles y desktop
+
+### Cómo ejecutarlo
+
+**Requisitos previos:**
+- Node.js 18+
+- PostgreSQL
+- Redis
+
+**Backend:**
+```bash
+cd 12-red-social/server
+npm install
+npx prisma migrate dev --name init
+npm run dev
+```
+
+**Frontend:**
+```bash
+cd 12-red-social/client
+npm install
+npm run dev
+```
+
+**Variables de entorno:**
+Copiar `.env.example` a `.env` en ambos directorios y configurar las credenciales.
+
 
