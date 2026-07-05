@@ -17,6 +17,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`08-finanzas-personales`](./08-finanzas-personales) | App de finanzas personales con React y TypeScript |
 | [`09-ahorcado-pwa`](./09-ahorcado-pwa) | Juego del Ahorcado como PWA con Vanilla JS |
 | [`10-recetas-expo`](./10-recetas-expo) | App de recetas con React Native, Expo y Spoonacular API |
+| [`11-notas-markdown`](./11-notas-markdown) | App de notas con Markdown, autenticación y Supabase |
 
 ## Stack común
 
@@ -228,4 +229,80 @@ npm run android  # Para Android
 npm run ios      # Para iOS (solo macOS)
 npm run web      # Para navegador web
 ```
+
+---
+
+## 11 — App de Notas con Markdown (Web - React & Supabase)
+
+Aplicación de notas con autenticación, soporte para Markdown, carpetas y búsqueda, construida con React, TypeScript y Supabase.
+
+### Qué practica
+
+- **React 19 y TypeScript**: Componentes modernos y tipado fuerte.
+- **Supabase**: Autenticación y base de datos en tiempo real.
+- **Contexto Global**: `useContext` para gestión de estado y cliente de Supabase.
+- **Markdown**: Renderizado de texto enriquecido con `react-markdown` y `remark-gfm`.
+- **Tailwind CSS**: Interfaz moderna y responsive.
+- **Seguridad**: Políticas RLS (Row Level Security) en Supabase para proteger los datos.
+
+### Funcionalidades
+
+- 🔐 **Autenticación**: Inicia sesión o registrate con email y contraseña
+- 📝 **CRUD de Notas**: Crea, lee, actualiza y borra notas
+- 📂 **Carpetas**: Organiza tus notas en carpetas
+- 📖 **Markdown**: Soporte completo para Markdown con GFM
+- 🔍 **Búsqueda**: Busca notas por título o contenido
+- ☁️ **Persistencia**: Datos guardados en Supabase en tiempo real
+
+### Cómo ejecutarlo
+
+1. **Crea un proyecto en Supabase**: https://supabase.com
+2. **Crea las tablas en Supabase**:
+   ```sql
+   -- Tabla de carpetas
+   create table folders (
+     id uuid default gen_random_uuid() primary key,
+     created_at timestamp default now() not null,
+     name text not null,
+     user_id uuid references auth.users not null
+   );
+
+   -- Tabla de notas
+   create table notes (
+     id uuid default gen_random_uuid() primary key,
+     created_at timestamp default now() not null,
+     title text not null,
+     content text default '',
+     folder_id uuid references folders on delete set null,
+     user_id uuid references auth.users not null,
+     updated_at timestamp default now() not null
+   );
+
+   -- Habilita RLS
+   alter table folders enable row level security;
+   alter table notes enable row level security;
+
+   -- Políticas de seguridad
+   create policy "Usuarios pueden ver sus carpetas" on folders for select using (auth.uid() = user_id);
+   create policy "Usuarios pueden crear carpetas" on folders for insert with check (auth.uid() = user_id);
+   create policy "Usuarios pueden actualizar sus carpetas" on folders for update using (auth.uid() = user_id);
+   create policy "Usuarios pueden borrar sus carpetas" on folders for delete using (auth.uid() = user_id);
+
+   create policy "Usuarios pueden ver sus notas" on notes for select using (auth.uid() = user_id);
+   create policy "Usuarios pueden crear notas" on notes for insert with check (auth.uid() = user_id);
+   create policy "Usuarios pueden actualizar sus notas" on notes for update using (auth.uid() = user_id);
+   create policy "Usuarios pueden borrar sus notas" on notes for delete using (auth.uid() = user_id);
+   ```
+3. **Configura tus variables de entorno**:
+   Copia `.env.example` a `.env` y agrega tus credenciales de Supabase:
+   ```
+   VITE_SUPABASE_URL=tu-supabase-url
+   VITE_SUPABASE_ANON_KEY=tu-supabase-anon-key
+   ```
+4. **Instala y ejecuta**:
+   ```bash
+   cd 11-notas-markdown
+   npm install
+   npm run dev
+   ```
 

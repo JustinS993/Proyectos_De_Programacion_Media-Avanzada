@@ -20,6 +20,7 @@ export const HomeScreen: React.FC = () => {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [isNewNote, setIsNewNote] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editContent, setEditContent] = useState('')
   const [editFolderId, setEditFolderId] = useState<string | null>(null)
@@ -35,7 +36,7 @@ export const HomeScreen: React.FC = () => {
 
   const handleNewNote = () => {
     const newNote: Note = {
-      id: Date.now().toString(),
+      id: '',
       title: 'Nueva Nota',
       content: '',
       folder_id: selectedFolderId,
@@ -48,17 +49,20 @@ export const HomeScreen: React.FC = () => {
     setEditContent(newNote.content)
     setEditFolderId(newNote.folder_id)
     setIsEditing(true)
+    setIsNewNote(true)
   }
 
   const handleSaveNote = async () => {
     if (!selectedNote) return
     try {
-      if (selectedNote.id.startsWith(Date.now().toString().slice(0, -3))) {
+      if (isNewNote) {
         await createNote(editTitle, editContent, editFolderId)
       } else {
         await updateNote(selectedNote.id, editTitle, editContent, editFolderId)
       }
       setIsEditing(false)
+      setIsNewNote(false)
+      setSelectedNote(null)
     } catch (err) {
       console.error('Error guardando nota:', err)
     }
@@ -198,7 +202,7 @@ export const HomeScreen: React.FC = () => {
           <div className="flex-1 flex flex-col p-8">
             <div className="flex items-center justify-between mb-6">
               <button
-                onClick={() => setIsEditing(false)}
+                onClick={() => { setIsEditing(false); setIsNewNote(false); setSelectedNote(null) }}
                 className="text-gray-600 hover:text-gray-800 text-sm font-medium"
               >
                 ← Cancelar
@@ -220,12 +224,14 @@ export const HomeScreen: React.FC = () => {
                 >
                   💾 Guardar
                 </button>
-                <button
-                  onClick={() => { if (confirm('¿Seguro que quieres borrar esta nota?')) deleteNote(selectedNote.id); setSelectedNote(null) }}
-                  className="px-4 py-2 bg-red-100 text-red-600 font-medium rounded-lg hover:bg-red-200"
-                >
-                  🗑️
-                </button>
+                {!isNewNote && (
+                  <button
+                    onClick={() => { if (confirm('¿Seguro que quieres borrar esta nota?')) { deleteNote(selectedNote.id); setSelectedNote(null) } }}
+                    className="px-4 py-2 bg-red-100 text-red-600 font-medium rounded-lg hover:bg-red-200"
+                  >
+                    🗑️
+                  </button>
+                )}
               </div>
             </div>
             <input
