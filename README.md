@@ -117,14 +117,17 @@ python -m http.server 8000
 
 ## 05 — Sorting Simulator (Web - React)
 
-Visualizador interactivo de algoritmos de ordenamiento que permite entender cómo funcionan estructuras de datos fundamentales de forma gráfica y animada.
+Visualizador interactivo y completo de algoritmos de ordenamiento que permite entender cómo funcionan estructuras de datos fundamentales de forma gráfica, animada y comparativa.
 
 ### Qué practica
 
 - **Visualización Asíncrona**: Uso de `async/await` y `Promise` para controlar el flujo de las animaciones en tiempo real.
 - **Animaciones de Interfaz**: Implementación de **Framer Motion** para transiciones suaves entre estados de las barras.
-- **Lógica de Algoritmos**: Implementación manual de Bubble Sort, Selection Sort y más.
-- **Control de Estados Complejos**: Gestión de colores dinámicos (comparando, intercambiando, ordenado) y cancelación de procesos con `AbortController`.
+- **Lógica de Algoritmos**: 7 algoritmos: Bubble, Selection, Insertion, Quick, Merge, Heap y Radix Sort.
+- **Control de Estados Complejos**: Gestión de colores dinámicos y cancelación de procesos con `AbortController`.
+- **Comparación Simultánea**: Ver dos algoritmos ejecutándose al mismo tiempo con arrays idénticos.
+- **Exportación de GIF**: Capturar y guardar animaciones de tus sesiones de ordenamiento.
+- **Historial de Ejecuciones**: Comparar tiempos y pasos de ejecuciones anteriores (almacenados en `localStorage`).
 - **UI Moderna**: Diseño con **Tailwind CSS**, modo oscuro y controles interactivos de velocidad.
 
 ### Cómo ejecutarlo
