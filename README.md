@@ -10,7 +10,8 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`03-ejercicio-lista-tareas`](./03-ejercicio-lista-tareas) | Lista de tareas (CRUD en memoria) con tipado e interfaces |
 | [`04-mi-primera-app`](./04-mi-primera-app) | Mi primera aplicación móvil con Expo y React Native |
 | [`app-calculator`](./app-calculator) | Aplicación de calculadora completa con Expo, Hooks y Haptics |
-| [`SyntaxQuest`](./SyntaxQuest) | Videojuego educativo 2D de lógica y sintaxis con Phaser 3 |
+| [`SyntaxQuest`](./SyntaxQuest) | Videojuego educativo 2D mejorado con React, TypeScript, Phaser y modo carrera |
+| [`13-rastreo-habitos`](./13-rastreo-habitos) | App de seguimiento de hábitos con dashboard, progreso y persistencia local |
 | [`05-sorting-simulator`](./05-sorting-simulator) | Visualizador interactivo de algoritmos de ordenamiento con React y Framer Motion |
 | [`06-among-us-wiki`](./06-among-us-wiki) | Wiki web sobre Among Us (juego y serie) con HTML y CSS |
 | [`07-spot-the-impostor`](./07-spot-the-impostor) | Juego de "Encuentra al Impostor" de Among Us con Phaser 3 |
@@ -29,6 +30,27 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 - **ESLint** para calidad de código
 
 Los `node_modules` y la carpeta `dist` no se versionan; en cada proyecto debes ejecutar `npm install` antes de desarrollar o compilar.
+
+---
+
+## 13 — Rastreo de Hábitos (Web - React & TypeScript)
+
+Aplicación para registrar hábitos diarios, visualizar progreso y mantener motivación con un tablero claro y persistencia local.
+
+### Qué practica
+
+- **React + TypeScript**: estructura de componentes y tipado fuerte.
+- **Estados dinámicos**: seguimiento de hábitos, metas y avances diarios.
+- **Persistencia local**: los datos se guardan en `localStorage` para conservarse tras recargar la página.
+- **Visualización de progreso**: indicadores visuales de cumplimiento y logros.
+
+### Cómo ejecutarlo
+
+```bash
+cd 13-rastreo-habitos
+npm install
+npm run dev
+```
 
 ---
 
@@ -85,33 +107,32 @@ npx expo start
 
 ---
 
-## SyntaxQuest (Web - Phaser 3)
+## SyntaxQuest (Web - React, TypeScript y Phaser)
 
-Videojuego educativo web en 2D donde los jugadores resuelven acertijos de sintaxis de programación para escapar de un laberinto digital mientras son perseguidos por un virus.
+Videojuego educativo web en 2D mejorado, donde los jugadores resuelven retos de sintaxis para escapar de un laberinto mientras compiten en modo carrera y gestionan progreso persistente.
 
 ### Qué practica
 
-- **Motor de Juego 2D**: Uso de **Phaser 3** para físicas, colisiones, sistemas de partículas y animaciones de cámara.
-- **IA de Persecución**: Implementación de un enemigo dinámico que sigue al jugador por el laberinto.
-- **The Judge (Web Workers)**: Ejecución segura y aislada de código JavaScript para validar desafíos.
-- **Desafíos de Sintaxis**: Sistema de selección múltiple integrado en una terminal retro.
-- **Arquitectura de Niveles**: Diseño de laberinto con conectividad garantizada y rutas de escape estratégicas.
-- **Feedback Visual**: Efectos de sacudida de cámara (shake), destellos (flash) y sistemas de partículas.
+- **React + TypeScript**: estructura modular para menú, selección de niveles, editor y pantalla de juego.
+- **Phaser**: lógica de movimiento, colisiones, retos y flujo de victoria.
+- **Modo carrera**: competición contra un tiempo o contra una experiencia de desafío más rápida.
+- **Editor de niveles**: creación y ajuste de mapas directamente desde la interfaz.
+- **Persistencia**: niveles y progreso guardados en `localStorage` para continuar donde se quedó el jugador.
+- **UX mejorada**: navegación clara entre pantallas y feedback visual más completo.
 
 ### Cómo ejecutarlo
 
 ```bash
-# Solo necesitas un servidor web simple
-# Si tienes Python:
-python -m http.server 8000
-# Luego abre http://localhost:8000/SyntaxQuest/
+cd SyntaxQuest
+npm install
+npm run dev
 ```
 
 ### Controles
 
-- **W, A, S, D** o **Flechas**: Mover al personaje.
-- **Interacción**: Colisionar con los sensores amarillos para activar desafíos.
-- **Ratón**: Seleccionar la respuesta correcta en la terminal.
+- **W, A, S, D** o **Flechas**: mover al personaje.
+- **Interacción**: activar retos al entrar en zonas especiales.
+- **Ratón**: seleccionar la respuesta correcta en la terminal o interactuar con la interfaz.
 
 ---
 
