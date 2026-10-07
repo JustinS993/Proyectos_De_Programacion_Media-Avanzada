@@ -20,6 +20,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`10-recetas-expo`](./10-recetas-expo) | App de recetas con React Native, Expo y Spoonacular API |
 | [`11-notas-markdown`](./11-notas-markdown) | App de notas con Markdown, autenticación y Supabase |
 | [`12-red-social`](./12-red-social) | Red social profesional con React, Node, PostgreSQL, Redis y Socket.io |
+| [`14-convertidor-imagenes-gif`](./14-convertidor-imagenes-gif) | Convertidor por lotes de imágenes y WebP animados a GIF con descarga ZIP |
 
 ## Stack común
 
@@ -386,4 +387,24 @@ npm run dev
 **Variables de entorno:**
 Copiar `.env.example` a `.env` en ambos directorios y configurar las credenciales.
 
+---
 
+## 14 — Convertidor de imágenes a GIF (Web - Vanilla JS)
+
+Aplicación web para convertir imágenes locales o enlaces directos y de wiki.gg a GIF, conservando la animación cuando el formato es compatible. Incluye conversión por lotes, descarga individual y descarga conjunta en ZIP. Todo se procesa localmente en el navegador.
+
+### Qué practica
+
+- **JavaScript modular**: separación entre interfaz, conversión, codificación GIF y generación ZIP.
+- **Formatos de imagen animada**: lectura de fotogramas con `ImageDecoder`.
+- **Web APIs**: File API, Canvas, Fetch y descarga de archivos.
+- **Diseño adaptable y accesible**: controles para teclado, estados de conversión y diseño móvil.
+
+### Cómo ejecutarlo
+
+```bash
+cd 14-convertidor-imagenes-gif
+python -m http.server 8000
+```
+
+Abre <http://localhost:8000> en un navegador moderno. Para enlaces de otros sitios se requiere que el servidor permita CORS; los enlaces de archivos wiki.gg se resuelven usando la API de MediaWiki.

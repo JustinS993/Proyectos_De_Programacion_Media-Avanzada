@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10151f">
+    <meta
+      name="description"
+      content="Convierte imágenes estáticas y animadas a GIF, directamente en tu navegador."
+    >
+    <title>Convertidor de imágenes a GIF</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script type="module" src="./src/app.js"></script>
+  </head>
+  <body>
+    <main class="page">
+      <p class="eyebrow">Convertidor privado y gratuito</p>
+      <h1>De WebP e imágenes a GIF</h1>
+      <p class="intro">
+        Convierte varias imágenes a la vez y descarga los GIFs por separado o juntos.
+        Tus archivos se procesan en este navegador; no se suben a ningún servidor.
+      </p>
+
+      <section class="panel" aria-label="Convertidor de imágenes">
+        <div class="content">
+          <div id="drop-zone" class="drop-zone">
+            <div class="drop-zone-content">
+              <div class="upload-icon" aria-hidden="true">↑</div>
+              <strong>Arrastra aquí tus imágenes</strong>
+              <p>WebP, PNG, JPG y otros formatos compatibles con tu navegador</p>
+              <button id="choose-files" class="button" type="button">Elegir imágenes del PC</button>
+              <input id="file-input" type="file" accept="image/*" multiple>
+
+              <div class="link-import">
+                <label for="image-links">O pega enlaces de imágenes o páginas wiki.gg</label>
+                <div class="link-controls">
+                  <textarea
+                    id="image-links"
+                    rows="2"
+                    placeholder="https://ejemplo.com/animacion.webp&#10;Un enlace por línea"
+                  ></textarea>
+                  <button id="add-links" class="button" type="button">Añadir enlaces</button>
+                </div>
+                <p class="link-help">
+                  También acepta enlaces wiki.gg con #/media/File:…; los demás servidores
+                  externos deben permitir acceso desde el navegador (CORS).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <section id="queue-section" aria-live="polite" hidden>
+            <div class="toolbar">
+              <h2>Imágenes seleccionadas</h2>
+              <span id="file-count" class="count">0 imágenes</span>
+            </div>
+            <div id="file-list" class="file-list"></div>
+            <div class="actions">
+              <button id="add-more" class="button small" type="button">Añadir más</button>
+              <button id="clear-list" class="button small" type="button">Vaciar lista</button>
+              <span class="spacer"></span>
+              <button id="download-all" class="button" type="button" disabled>
+                Descargar todos (.zip)
+              </button>
+              <button id="convert" class="button primary" type="button">Convertir a GIF</button>
+            </div>
+            <div id="progress-wrap" class="progress-wrap" hidden>
+              <div
+                class="progress-track"
+                role="progressbar"
+                aria-label="Progreso de conversión"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+              >
+                <div id="progress-bar" class="progress-bar"></div>
+              </div>
+              <div id="progress-label" class="progress-label"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+      <p class="notice">
+        No hay un límite artificial de imágenes. La cantidad y el tamaño que se pueden
+        procesar dependen de la memoria disponible en tu equipo y de los límites del navegador.
+      </p>
+    </main>
+  </body>
+</html>
