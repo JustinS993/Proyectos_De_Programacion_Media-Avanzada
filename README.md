@@ -21,6 +21,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`11-notas-markdown`](./11-notas-markdown) | App de notas con Markdown, autenticación y Supabase |
 | [`12-red-social`](./12-red-social) | Red social profesional con React, Node, PostgreSQL, Redis y Socket.io |
 | [`14-convertidor-imagenes-gif`](./14-convertidor-imagenes-gif) | Convertidor por lotes de imágenes y WebP animados a GIF con descarga ZIP |
+| [`15-base-datos-simple`](./15-base-datos-simple) | Proyecto sencillo de base de datos con SQLite y CRUD en consola |
 
 ## Stack común
 

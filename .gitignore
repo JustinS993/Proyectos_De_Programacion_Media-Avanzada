@@ -35,5 +35,8 @@ Thumbs.db
 # local env files
 .env*.local
 
+# project-generated runtime data
+15-base-datos-simple/mysql-data/
+
 # typescript
 *.tsbuildinfo
