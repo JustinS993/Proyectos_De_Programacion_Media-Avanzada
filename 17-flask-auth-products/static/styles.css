@@ -1,0 +1,47 @@
+body {
+    background: linear-gradient(135deg, #f4f7fb 0%, #e9effb 100%);
+    min-height: 100vh;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.04rem;
+}
+
+.auth-card {
+    max-width: 420px;
+    margin: 4rem auto;
+    border: none;
+    border-radius: 18px;
+    box-shadow: 0 18px 50px rgba(13, 38, 76, 0.12);
+}
+
+.dashboard-card {
+    border: none;
+    border-radius: 18px;
+    box-shadow: 0 12px 35px rgba(22, 35, 61, 0.08);
+}
+
+.product-table td,
+.product-table th {
+    vertical-align: middle;
+}
+
+.badge-soft {
+    background: rgba(13, 110, 253, 0.12);
+    color: #0d6efd;
+}
+
+.btn-primary {
+    border-radius: 12px;
+}
+
+.form-control,
+.form-select {
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+}
+
+.alert {
+    border-radius: 12px;
+}

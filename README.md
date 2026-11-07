@@ -22,6 +22,8 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`12-red-social`](./12-red-social) | Red social profesional con React, Node, PostgreSQL, Redis y Socket.io |
 | [`14-convertidor-imagenes-gif`](./14-convertidor-imagenes-gif) | Convertidor por lotes de imágenes y WebP animados a GIF con descarga ZIP |
 | [`15-base-datos-simple`](./15-base-datos-simple) | Proyecto sencillo de base de datos con SQLite y CRUD en consola |
+| [`16-flask-mysql-users`](./16-flask-mysql-users) | CRUD de usuarios con Flask y MySQL |
+| [`17-flask-auth-products`](./17-flask-auth-products) | App con Bootstrap, autenticación, productos y API REST en Flask |
 
 ## Stack común
 

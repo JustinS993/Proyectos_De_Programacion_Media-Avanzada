@@ -2,6 +2,12 @@
 .vscode/
 .idea/
 
+# Python cache / virtual environments
+__pycache__/
+*.pyc
+.venv/
+venv/
+
 # dependencies
 node_modules/
 
