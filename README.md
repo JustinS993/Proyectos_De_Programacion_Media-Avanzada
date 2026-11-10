@@ -1,6 +1,6 @@
 # Proyectos de Programación Media-Avanzada
 
-Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces web con **React**, **TypeScript** y **Vite**, y desarrollo móvil con **React Native** y **Expo**. Cada carpeta es un proyecto independiente que puedes clonar, instalar y ejecutar por separado.
+Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces web con **React**, **TypeScript** y **Vite**, desarrollo móvil con **React Native** y **Expo**, y análisis de datos con **Python**. Cada carpeta es un proyecto independiente que puedes clonar, instalar y ejecutar por separado.
 
 ## Contenido del repositorio
 
@@ -24,6 +24,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`15-base-datos-simple`](./15-base-datos-simple) | Proyecto sencillo de base de datos con SQLite y CRUD en consola |
 | [`16-flask-mysql-users`](./16-flask-mysql-users) | CRUD de usuarios con Flask y MySQL |
 | [`17-flask-auth-products`](./17-flask-auth-products) | App con Bootstrap, autenticación, productos y API REST en Flask |
+| [`18-analisis-ventas`](./18-analisis-ventas) | Dashboard interactivo de ventas con Python, Streamlit, pandas y Plotly |
 
 ## Stack común
 
@@ -32,6 +33,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 - **TypeScript**
 - **Vite 8** (desarrollo web)
 - **ESLint** para calidad de código
+- **Python**, **Streamlit**, **pandas** y **Plotly** para análisis de datos
 
 Los `node_modules` y la carpeta `dist` no se versionan; en cada proyecto debes ejecutar `npm install` antes de desarrollar o compilar.
 
