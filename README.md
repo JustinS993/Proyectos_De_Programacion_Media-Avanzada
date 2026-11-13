@@ -11,7 +11,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`04-mi-primera-app`](./04-mi-primera-app) | Mi primera aplicación móvil con Expo y React Native |
 | [`app-calculator`](./app-calculator) | Aplicación de calculadora completa con Expo, Hooks y Haptics |
 | [`SyntaxQuest`](./SyntaxQuest) | Videojuego educativo 2D mejorado con React, TypeScript, Phaser y modo carrera |
-| [`13-rastreo-habitos`](./13-rastreo-habitos) | App de seguimiento de hábitos con dashboard, progreso y persistencia local |
+| [`13-rastreo-habitos`](./13-rastreo-habitos) | Rastreador de hábitos con rachas, cumplimiento semanal/mensual, calendario y respaldos |
 | [`05-sorting-simulator`](./05-sorting-simulator) | Visualizador interactivo de algoritmos de ordenamiento con React y Framer Motion |
 | [`06-among-us-wiki`](./06-among-us-wiki) | Wiki web sobre Among Us (juego y serie) con HTML y CSS |
 | [`07-spot-the-impostor`](./07-spot-the-impostor) | Juego de "Encuentra al Impostor" de Among Us con Phaser 3 |
@@ -47,7 +47,9 @@ Aplicación para registrar hábitos diarios, visualizar progreso y mantener moti
 
 - **React + TypeScript**: estructura de componentes y tipado fuerte.
 - **Estados dinámicos**: seguimiento de hábitos, metas y avances diarios.
-- **Persistencia local**: los datos se guardan en `localStorage` para conservarse tras recargar la página.
+- **Rachas y cumplimiento**: progreso semanal o mensual por hábito, con rachas calculadas desde las fechas registradas.
+- **Filtros y calendario**: consulta un hábito a la vez y marca o desmarca días en una vista mensual.
+- **Persistencia y respaldos**: los registros se guardan en `localStorage` y se pueden exportar como JSON o CSV; el JSON se puede restaurar.
 - **Visualización de progreso**: indicadores visuales de cumplimiento y logros.
 
 ### Cómo ejecutarlo
