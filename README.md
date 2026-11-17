@@ -13,7 +13,7 @@ Repositorio con ejercicios prácticos de **Electiva V**, enfocados en interfaces
 | [`SyntaxQuest`](./SyntaxQuest) | Videojuego educativo 2D mejorado con React, TypeScript, Phaser y modo carrera |
 | [`13-rastreo-habitos`](./13-rastreo-habitos) | Rastreador de hábitos con rachas, cumplimiento semanal/mensual, calendario y respaldos |
 | [`05-sorting-simulator`](./05-sorting-simulator) | Visualizador interactivo de algoritmos de ordenamiento con React y Framer Motion |
-| [`06-among-us-wiki`](./06-among-us-wiki) | Wiki web sobre Among Us (juego y serie) con HTML y CSS |
+| [`06-among-us-wiki`](./06-among-us-wiki) | Wiki de Among Us con búsqueda, filtros, navegación móvil y favoritos |
 | [`07-spot-the-impostor`](./07-spot-the-impostor) | Juego de "Encuentra al Impostor" de Among Us con Phaser 3 |
 | [`08-finanzas-personales`](./08-finanzas-personales) | App de finanzas personales con React y TypeScript |
 | [`09-ahorcado-pwa`](./09-ahorcado-pwa) | Juego del Ahorcado como PWA con Vanilla JS |
