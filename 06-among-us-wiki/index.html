@@ -20,7 +20,11 @@
       <div class="logo">
         <h1>Among Us Wiki</h1>
       </div>
-      <ul class="nav-links">
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation">
+        <span class="nav-toggle-icon" aria-hidden="true">☰</span>
+        <span class="visually-hidden">Abrir menú de navegación</span>
+      </button>
+      <ul class="nav-links" id="primary-navigation">
         <li><a href="#game">El Juego</a></li>
         <li><a href="#series">La Serie</a></li>
         <li><a href="#roles">Roles</a></li>
@@ -40,6 +44,39 @@
     </div>
   </header>
 
+  <section class="content-tools" aria-labelledby="content-tools-title">
+    <div class="container">
+      <div class="content-tools-heading">
+        <div>
+          <p class="eyebrow">Explora la wiki</p>
+          <h2 id="content-tools-title">Encuentra tu próxima pista</h2>
+        </div>
+        <button id="favorites-filter" class="favorites-filter" type="button" aria-pressed="false">
+          <span aria-hidden="true">☆</span> Solo favoritos <span id="favorites-count" class="favorites-count">0</span>
+        </button>
+      </div>
+      <div class="content-filter-controls">
+        <label class="search-control" for="content-search">
+          <span class="visually-hidden">Buscar en el contenido</span>
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input id="content-search" type="search" placeholder="Buscar roles, mapas y contenido…" autocomplete="off">
+          <kbd>Ctrl/⌘ K</kbd>
+        </label>
+        <label class="category-control" for="content-category">
+          <span class="visually-hidden">Filtrar por categoría</span>
+          <select id="content-category">
+            <option value="all">Todo el contenido</option>
+            <option value="game">El juego</option>
+            <option value="series">La serie</option>
+            <option value="role">Roles</option>
+            <option value="map">Mapas</option>
+          </select>
+        </label>
+      </div>
+      <p id="content-results" class="content-results" aria-live="polite"></p>
+    </div>
+  </section>
+
   <!-- MAIN CONTENT -->
   <main>
     <!-- SECTION: EL JUEGO -->
@@ -47,12 +84,12 @@
       <div class="container">
         <h2 class="section-title">El Juego</h2>
         <div class="section-content">
-          <article class="card">
+          <article class="card searchable-card" data-content-type="game">
             <h3>¿Qué es Among Us?</h3>
             <p>Among Us es un juego social de deducción desarrollado por InnerSloth. Un grupo de jugadores intenta completar tareas en una nave espacial, pero hay impostores entre ellos que intentan sabotear y matar a los crewmates.</p>
           </article>
           
-          <article class="card">
+          <article class="card searchable-card" data-content-type="game">
             <h3>Objetivos</h3>
             <ul class="objective-list">
               <li><strong>Crewmates:</strong> Completar todas las tareas o encontrar y votar a los impostores</li>
@@ -60,7 +97,7 @@
             </ul>
           </article>
           
-          <article class="card">
+          <article class="card searchable-card" data-content-type="game">
             <h3>Lanzamiento</h3>
             <p>Lanzado el 15 de junio de 2018, pero se convirtió en un fenómeno global en 2020.</p>
           </article>
@@ -73,12 +110,12 @@
       <div class="container">
         <h2 class="section-title">La Serie Animada</h2>
         <div class="section-content">
-          <article class="card">
+          <article class="card searchable-card" data-content-type="series">
             <h3>La Película/Serie</h3>
             <p>En noviembre de 2024 se estrenó la serie animada basada en el juego, expandiendo el universo de Among Us con una historia emocionante.</p>
           </article>
           
-          <article class="card">
+          <article class="card searchable-card" data-content-type="series">
             <h3>La Trama</h3>
             <p>Sigue las aventuras de un grupo de crewmates en su viaje espacial mientras intentan descubrir quién es el impostor.</p>
           </article>
