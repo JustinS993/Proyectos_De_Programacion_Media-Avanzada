@@ -1,4 +1,4 @@
-# Flask Auth + Products + MySQL API
+# Flask Auth + Products + SQLite/MySQL API
 
 Este proyecto es una aplicación web de gestión de productos con autenticación de usuarios, interfaz moderna con Bootstrap y una API REST en Flask.
 
@@ -7,13 +7,20 @@ Este proyecto es una aplicación web de gestión de productos con autenticación
 - Registro e inicio de sesión
 - Autenticación por sesión
 - Dashboard con gestión de productos
-- CRUD de productos con MySQL o modo fallback local
+- CRUD de productos con SQLite persistente o MySQL opcional
+- Protección CSRF y sesiones con rotación
+- Validación de usuarios y productos
+- Arquitectura con app factory, modelos y repositorios
 - API REST con JSON
 - Diseño moderno con Bootstrap 5
 
 ## Estructura del proyecto
 
-- `app.py` — lógica principal de Flask
+- `app.py` — app factory y rutas
+- `models.py` — modelos SQLAlchemy
+- `repositories.py` — acceso a datos
+- `validation.py` — validaciones
+- `extensions.py` — SQLAlchemy y Flask-Limiter
 - `templates/` — vistas HTML
 - `static/styles.css` — estilos personalizados
 - `requirements.txt` — dependencias
@@ -106,6 +113,21 @@ Actualiza un producto.
 
 Elimina un producto.
 
-## Nota
+## Persistencia
 
-Si MySQL no está disponible, la app funciona en modo local con almacenamiento en memoria para poder seguir desarrollando y probando la interfaz.
+Por defecto usa SQLite en `instance/products.db`. Para usar MySQL, configura `USE_MYSQL=true` y las variables `MYSQL_*` del archivo `.env`.
+También puedes definir `DATABASE_URL` con una URL SQLAlchemy completa.
+
+## Seguridad
+
+- Las contraseñas se almacenan con hash seguro.
+- Los formularios usan CSRF.
+- Las sesiones usan cookies HttpOnly, SameSite=Lax y expiración de una hora.
+- Las rutas API exigen autenticación por sesión.
+- Los intentos de login y registro tienen límites.
+
+## Pruebas
+
+```bash
+python -m pytest -v
+```

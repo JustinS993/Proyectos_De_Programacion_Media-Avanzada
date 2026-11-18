@@ -12,6 +12,7 @@
         </div>
 
         <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <div class="mb-3">
             <label class="form-label" for="name">Nombre</label>
             <input type="text" class="form-control" id="name" name="name" placeholder="Laptop Lenovo" required />
@@ -63,14 +64,15 @@
               <tbody>
                 {% for product in products %}
                   <tr>
-                    <td class="fw-semibold">{{ product.name if product is mapping else product['name'] }}</td>
-                    <td>{{ (product.description if product is mapping else product.get('description', '')) or 'Sin descripción' }}</td>
-                    <td>${{ '%.2f' % (product.price if product is mapping else product['price']) }}</td>
-                    <td>{{ product.stock if product is mapping else product['stock'] }}</td>
+                    <td class="fw-semibold">{{ product.name }}</td>
+                    <td>{{ product.description or 'Sin descripción' }}</td>
+                    <td>${{ '%.2f' % product.price }}</td>
+                    <td>{{ product.stock }}</td>
                     <td class="text-center">
                       <div class="btn-group btn-group-sm" role="group">
-                        <a href="{{ url_for('edit_product', product_id=(product.id if product is mapping else product['id'])) }}" class="btn btn-outline-primary">Editar</a>
-                        <form method="POST" action="{{ url_for('delete_product_route', product_id=(product.id if product is mapping else product['id'])) }}" onsubmit="return confirm('¿Deseas eliminar este producto?');">
+                        <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn btn-outline-primary">Editar</a>
+                        <form method="POST" action="{{ url_for('delete_product_route', product_id=product.id) }}" onsubmit="return confirm('¿Deseas eliminar este producto?');">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                           <button type="submit" class="btn btn-outline-danger">Eliminar</button>
                         </form>
                       </div>

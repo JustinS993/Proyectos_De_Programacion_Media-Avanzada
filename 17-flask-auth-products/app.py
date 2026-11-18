@@ -1,522 +1,342 @@
 import os
+import secrets
 from functools import wraps
+from pathlib import Path
 
-import pymysql
 from dotenv import load_dotenv
-from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
+from flask import (
+    Flask,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from werkzeug.security import check_password_hash, generate_password_hash
+
+from extensions import db, limiter
+from models import Product, User
+from repositories import ProductRepository, UserRepository
+from validation import parse_product, validate_email
 
 load_dotenv()
 
-app = Flask(__name__)
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "bootstrap-auth-demo-secret")
-app.config["JSON_SORT_KEYS"] = False
 
-MYSQL_CONFIG = {
-    "host": os.getenv("MYSQL_HOST", "127.0.0.1"),
-    "port": int(os.getenv("MYSQL_PORT", "3306")),
-    "user": os.getenv("MYSQL_USER", "root"),
-    "password": os.getenv("MYSQL_PASSWORD", ""),
-    "database": os.getenv("MYSQL_DATABASE", "flask_auth_products"),
-}
+def build_database_uri(config):
+    database_url = config.get("DATABASE_URL")
+    if database_url:
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        return database_url
 
-DB_AVAILABLE = False
-USERS_STORE = {}
-PRODUCTS_STORE = []
-USER_SEQUENCE = 1
-PRODUCT_SEQUENCE = 1
+    mysql_host = config.get("MYSQL_HOST", "127.0.0.1")
+    mysql_port = config.get("MYSQL_PORT", "3306")
+    mysql_user = config.get("MYSQL_USER", "root")
+    mysql_password = config.get("MYSQL_PASSWORD", "")
+    mysql_database = config.get("MYSQL_DATABASE", "flask_auth_products")
 
-
-def get_connection(database_name=None):
-    config = {
-        "host": MYSQL_CONFIG["host"],
-        "port": MYSQL_CONFIG["port"],
-        "user": MYSQL_CONFIG["user"],
-        "password": MYSQL_CONFIG["password"],
-        "cursorclass": pymysql.cursors.DictCursor,
-        "autocommit": True,
-    }
-    if database_name:
-        config["database"] = database_name
-    return pymysql.connect(**config)
+    if config.get("USE_MYSQL", "").lower() in {"1", "true", "yes"}:
+        return (
+            f"mysql+pymysql://{mysql_user}:{mysql_password}@"
+            f"{mysql_host}:{mysql_port}/{mysql_database}"
+        )
+    return "sqlite:///products.db"
 
 
-def initialize_database():
-    root_connection = pymysql.connect(
-        host=MYSQL_CONFIG["host"],
-        port=MYSQL_CONFIG["port"],
-        user=MYSQL_CONFIG["user"],
-        password=MYSQL_CONFIG["password"],
-        autocommit=True,
+def create_app(test_config=None):
+    app = Flask(__name__)
+    app.config.update(
+        SECRET_KEY=os.getenv("SECRET_KEY", "development-only-change-me"),
+        MYSQL_HOST=os.getenv("MYSQL_HOST", "127.0.0.1"),
+        MYSQL_PORT=os.getenv("MYSQL_PORT", "3306"),
+        MYSQL_USER=os.getenv("MYSQL_USER", "root"),
+        MYSQL_PASSWORD=os.getenv("MYSQL_PASSWORD", ""),
+        MYSQL_DATABASE=os.getenv("MYSQL_DATABASE", "flask_auth_products"),
+        DATABASE_URL=os.getenv("DATABASE_URL"),
+        USE_MYSQL=os.getenv("USE_MYSQL", "false"),
+        JSON_SORT_KEYS=False,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true",
+        PERMANENT_SESSION_LIFETIME=3600,
     )
-    try:
-        with root_connection.cursor() as cursor:
-            cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{MYSQL_CONFIG['database']}`")
-    finally:
-        root_connection.close()
+    if test_config:
+        app.config.update(test_config)
 
-    with get_connection(MYSQL_CONFIG["database"]) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS users (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    name VARCHAR(150) NOT NULL,
-                    email VARCHAR(180) NOT NULL UNIQUE,
-                    password_hash VARCHAR(255) NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-                """
-            )
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS products (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    user_id INT NOT NULL,
-                    name VARCHAR(150) NOT NULL,
-                    description TEXT,
-                    price DECIMAL(10,2) NOT NULL,
-                    stock INT NOT NULL DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                )
-                """
-            )
-    return True
+    if not (test_config and "SQLALCHEMY_DATABASE_URI" in test_config):
+        app.config["SQLALCHEMY_DATABASE_URI"] = build_database_uri(app.config)
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
 
+    db.init_app(app)
+    limiter.init_app(app)
+    app.jinja_env.globals["csrf_token"] = get_csrf_token
 
-try:
-    initialize_database()
-    DB_AVAILABLE = True
-except Exception as exc:
-    DB_AVAILABLE = False
-    print(f"MySQL not available: {exc}")
+    @app.before_request
+    def protect_requests():
+        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            supplied = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
+            if not supplied or supplied != session.get("csrf_token"):
+                if request.path.startswith("/api/"):
+                    return jsonify({"error": "CSRF validation failed"}), 403
+                flash("La solicitud expiró o no es válida.", "danger")
+                return redirect(url_for("login") if "user_id" not in session else url_for("dashboard"))
+
+    @app.after_request
+    def add_security_headers(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
+    with app.app_context():
+        db.create_all()
+
+    register_routes(app)
+    return app
 
 
-def user_to_dict(row):
-    if row is None:
-        return None
-    return {"id": row["id"], "name": row["name"], "email": row["email"]}
-
-
-def product_to_dict(row):
-    if row is None:
-        return None
-    created_at = row.get("created_at")
-    return {
-        "id": row["id"],
-        "user_id": row["user_id"],
-        "name": row["name"],
-        "description": row.get("description", ""),
-        "price": float(row["price"]),
-        "stock": int(row["stock"]),
-        "created_at": created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(created_at, "strftime") else created_at,
-    }
-
-
-def get_in_memory_user_by_email(email):
-    for user in USERS_STORE.values():
-        if user["email"].lower() == email.lower():
-            return user
-    return None
-
-
-def get_in_memory_user_by_id(user_id):
-    return USERS_STORE.get(user_id)
-
-
-def get_in_memory_products_for_user(user_id):
-    return [product for product in PRODUCTS_STORE if product["user_id"] == user_id]
-
-
-def create_in_memory_user(name, email, password_hash):
-    global USER_SEQUENCE
-    user = {
-        "id": USER_SEQUENCE,
-        "name": name,
-        "email": email,
-        "password_hash": password_hash,
-    }
-    USERS_STORE[USER_SEQUENCE] = user
-    USER_SEQUENCE += 1
-    return user
-
-
-def create_in_memory_product(user_id, name, description, price, stock):
-    global PRODUCT_SEQUENCE
-    product = {
-        "id": PRODUCT_SEQUENCE,
-        "user_id": user_id,
-        "name": name,
-        "description": description,
-        "price": float(price),
-        "stock": int(stock),
-    }
-    PRODUCTS_STORE.append(product)
-    PRODUCT_SEQUENCE += 1
-    return product
-
-
-def get_user_by_email(email):
-    if not DB_AVAILABLE:
-        return get_in_memory_user_by_email(email)
-
-    with get_connection(MYSQL_CONFIG["database"]) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-            return cursor.fetchone()
-
-
-def get_user_by_id(user_id):
-    if not DB_AVAILABLE:
-        return get_in_memory_user_by_id(user_id)
-
-    with get_connection(MYSQL_CONFIG["database"]) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
-            return cursor.fetchone()
-
-
-def create_user(name, email, password_hash):
-    if not DB_AVAILABLE:
-        return create_in_memory_user(name, email, password_hash)
-
-    with get_connection(MYSQL_CONFIG["database"]) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO users (name, email, password_hash) VALUES (%s, %s, %s)",
-                (name, email, password_hash),
-            )
-            user_id = cursor.lastrowid
-            return {"id": user_id, "name": name, "email": email, "password_hash": password_hash}
-
-
-def list_products(user_id):
-    if not DB_AVAILABLE:
-        return get_in_memory_products_for_user(user_id)
-
-    with get_connection(MYSQL_CONFIG["database"]) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT * FROM products WHERE user_id = %s ORDER BY id DESC",
-                (user_id,),
-            )
-            return cursor.fetchall()
-
-
-def create_product(user_id, name, description, price, stock):
-    if not DB_AVAILABLE:
-        return create_in_memory_product(user_id, name, description, price, stock)
-
-    with get_connection(MYSQL_CONFIG["database"]) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO products (user_id, name, description, price, stock) VALUES (%s, %s, %s, %s, %s)",
-                (user_id, name, description, price, stock),
-            )
-            product_id = cursor.lastrowid
-            return {
-                "id": product_id,
-                "user_id": user_id,
-                "name": name,
-                "description": description,
-                "price": float(price),
-                "stock": int(stock),
-            }
-
-
-def update_product(product_id, user_id, name, description, price, stock):
-    if not DB_AVAILABLE:
-        for product in PRODUCTS_STORE:
-            if product["id"] == product_id and product["user_id"] == user_id:
-                product["name"] = name
-                product["description"] = description
-                product["price"] = float(price)
-                product["stock"] = int(stock)
-                return product
-        return None
-
-    with get_connection(MYSQL_CONFIG["database"]) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "UPDATE products SET name = %s, description = %s, price = %s, stock = %s WHERE id = %s AND user_id = %s",
-                (name, description, price, stock, product_id, user_id),
-            )
-            if cursor.rowcount == 0:
-                return None
-            return {
-                "id": product_id,
-                "user_id": user_id,
-                "name": name,
-                "description": description,
-                "price": float(price),
-                "stock": int(stock),
-            }
-
-
-def delete_product(product_id, user_id):
-    if not DB_AVAILABLE:
-        for index, product in enumerate(PRODUCTS_STORE):
-            if product["id"] == product_id and product["user_id"] == user_id:
-                PRODUCTS_STORE.pop(index)
-                return True
-        return False
-
-    with get_connection(MYSQL_CONFIG["database"]) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM products WHERE id = %s AND user_id = %s", (product_id, user_id))
-            return cursor.rowcount > 0
-
-
-def get_product_by_id(product_id, user_id):
-    if not DB_AVAILABLE:
-        for product in PRODUCTS_STORE:
-            if product["id"] == product_id and product["user_id"] == user_id:
-                return product
-        return None
-
-    with get_connection(MYSQL_CONFIG["database"]) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM products WHERE id = %s AND user_id = %s", (product_id, user_id))
-            return cursor.fetchone()
+def get_csrf_token():
+    token = session.get("csrf_token")
+    if not token:
+        token = secrets.token_hex(32)
+        session["csrf_token"] = token
+    return token
 
 
 def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
         if "user_id" not in session:
+            if request.path.startswith("/api/"):
+                return jsonify({"error": "Authentication required"}), 401
             flash("Debes iniciar sesión para continuar.", "warning")
+            return redirect(url_for("login"))
+        user = UserRepository.find_by_id(session["user_id"])
+        if user is None:
+            session.clear()
+            if request.path.startswith("/api/"):
+                return jsonify({"error": "Authentication required"}), 401
             return redirect(url_for("login"))
         return view(*args, **kwargs)
 
     return wrapped
 
 
-@app.route("/")
-def index():
-    if "user_id" in session:
-        return redirect(url_for("dashboard"))
-    return redirect(url_for("login"))
+def register_routes(app):
+    @app.route("/")
+    def index():
+        if "user_id" in session:
+            return redirect(url_for("dashboard"))
+        return redirect(url_for("login"))
 
+    @app.route("/register", methods=["GET", "POST"])
+    @limiter.limit("10 per hour")
+    def register():
+        if "user_id" in session:
+            return redirect(url_for("dashboard"))
+        if request.method == "POST":
+            name = request.form.get("name", "").strip()
+            email = request.form.get("email", "").strip().lower()
+            password = request.form.get("password", "")
+            confirm_password = request.form.get("confirm_password", "")
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        email = request.form.get("email", "").strip()
-        password = request.form.get("password", "")
-        confirm_password = request.form.get("confirm_password", "")
+            if not 2 <= len(name) <= 150:
+                flash("El nombre debe tener entre 2 y 150 caracteres.", "danger")
+                return redirect(url_for("register"))
+            if not validate_email(email):
+                flash("Ingresa un correo electrónico válido.", "danger")
+                return redirect(url_for("register"))
+            if len(password) < 8 or len(password) > 72:
+                flash("La contraseña debe tener entre 8 y 72 caracteres.", "danger")
+                return redirect(url_for("register"))
+            if password != confirm_password:
+                flash("Las contraseñas no coinciden.", "danger")
+                return redirect(url_for("register"))
+            if UserRepository.find_by_email(email):
+                flash("Ya existe un usuario con ese correo.", "warning")
+                return redirect(url_for("register"))
 
-        if not all([name, email, password, confirm_password]):
-            flash("Todos los campos son obligatorios.", "danger")
-            return redirect(url_for("register"))
-
-        if password != confirm_password:
-            flash("Las contraseñas no coinciden.", "danger")
-            return redirect(url_for("register"))
-
-        if get_user_by_email(email):
-            flash("Ya existe un usuario con ese correo.", "warning")
-            return redirect(url_for("register"))
-
-        user = create_user(name, email, generate_password_hash(password))
-        session["user_id"] = user["id"]
-        session["user_name"] = user["name"]
-        flash("Registro exitoso. Bienvenido.", "success")
-        return redirect(url_for("dashboard"))
-
-    return render_template("register.html")
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form.get("email", "").strip()
-        password = request.form.get("password", "")
-
-        user = get_user_by_email(email)
-        if not user:
-            flash("Credenciales inválidas.", "danger")
-            return redirect(url_for("login"))
-
-        stored_hash = user["password_hash"]
-        if not check_password_hash(stored_hash, password):
-            flash("Credenciales inválidas.", "danger")
-            return redirect(url_for("login"))
-
-        session["user_id"] = user["id"]
-        session["user_name"] = user["name"]
-        flash("Has iniciado sesión correctamente.", "success")
-        return redirect(url_for("dashboard"))
-
-    return render_template("login.html")
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    flash("Sesión cerrada correctamente.", "info")
-    return redirect(url_for("login"))
-
-
-@app.route("/dashboard", methods=["GET", "POST"])
-@login_required
-def dashboard():
-    if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        description = request.form.get("description", "").strip()
-        price = request.form.get("price", "").strip()
-        stock = request.form.get("stock", "").strip()
-
-        if not all([name, price, stock]):
-            flash("El nombre, precio y stock son obligatorios.", "danger")
+            user = UserRepository.create(name, email, generate_password_hash(password))
+            establish_session(user)
+            flash("Registro exitoso. Bienvenido.", "success")
             return redirect(url_for("dashboard"))
 
-        try:
-            price_value = float(price)
-            stock_value = int(stock)
-        except ValueError:
-            flash("Precio y stock deben ser números válidos.", "danger")
+        return render_template("register.html")
+
+    @app.route("/login", methods=["GET", "POST"])
+    @limiter.limit("20 per hour")
+    def login():
+        if "user_id" in session:
+            return redirect(url_for("dashboard"))
+        if request.method == "POST":
+            email = request.form.get("email", "").strip().lower()
+            password = request.form.get("password", "")
+            user = UserRepository.find_by_email(email) if email else None
+
+            if not user or not check_password_hash(user.password_hash, password):
+                flash("Credenciales inválidas.", "danger")
+                return redirect(url_for("login"))
+
+            establish_session(user)
+            flash("Has iniciado sesión correctamente.", "success")
             return redirect(url_for("dashboard"))
 
-        product = create_product(session["user_id"], name, description, price_value, stock_value)
-        flash(f"Producto '{product['name']}' agregado con éxito.", "success")
-        return redirect(url_for("dashboard"))
+        return render_template("login.html")
 
-    user = get_user_by_id(session["user_id"])
-    products = list_products(session["user_id"])
-    return render_template("dashboard.html", user=user, products=products, db_available=DB_AVAILABLE)
+    @app.route("/logout", methods=["POST"])
+    @login_required
+    def logout():
+        session.clear()
+        flash("Sesión cerrada correctamente.", "info")
+        return redirect(url_for("login"))
 
+    @app.route("/dashboard", methods=["GET", "POST"])
+    @login_required
+    def dashboard():
+        if request.method == "POST":
+            name, description, price, stock, errors = parse_product(
+                request.form.get("name"),
+                request.form.get("description"),
+                request.form.get("price"),
+                request.form.get("stock"),
+            )
+            if errors:
+                for error in errors:
+                    flash(error, "danger")
+                return redirect(url_for("dashboard"))
 
-@app.route("/products/<int:product_id>/edit", methods=["GET", "POST"])
-@login_required
-def edit_product(product_id):
-    product = get_product_by_id(product_id, session["user_id"])
-    if product is None:
-        flash("Producto no encontrado.", "warning")
-        return redirect(url_for("dashboard"))
+            product = ProductRepository.create(
+                session["user_id"], name, description, price, stock
+            )
+            flash(f"Producto '{product.name}' agregado con éxito.", "success")
+            return redirect(url_for("dashboard"))
 
-    if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        description = request.form.get("description", "").strip()
-        price = request.form.get("price", "").strip()
-        stock = request.form.get("stock", "").strip()
+        user = UserRepository.find_by_id(session["user_id"])
+        products = ProductRepository.list_for_user(session["user_id"])
+        return render_template(
+            "dashboard.html",
+            user=user,
+            products=products,
+            db_available=not app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"),
+        )
 
-        if not all([name, price, stock]):
-            flash("El nombre, precio y stock son obligatorios.", "danger")
-            return redirect(url_for("edit_product", product_id=product_id))
+    @app.route("/products/<int:product_id>/edit", methods=["GET", "POST"])
+    @login_required
+    def edit_product(product_id):
+        product = ProductRepository.find_for_user(product_id, session["user_id"])
+        if product is None:
+            flash("Producto no encontrado.", "warning")
+            return redirect(url_for("dashboard"))
 
-        try:
-            updated = update_product(product_id, session["user_id"], name, description, float(price), int(stock))
-        except ValueError:
-            flash("Precio y stock deben ser válidos.", "danger")
-            return redirect(url_for("edit_product", product_id=product_id))
+        if request.method == "POST":
+            name, description, price, stock, errors = parse_product(
+                request.form.get("name"),
+                request.form.get("description"),
+                request.form.get("price"),
+                request.form.get("stock"),
+            )
+            if errors:
+                for error in errors:
+                    flash(error, "danger")
+                return redirect(url_for("edit_product", product_id=product_id))
 
-        if updated:
+            ProductRepository.update(product, name, description, price, stock)
             flash("Producto actualizado correctamente.", "success")
+            return redirect(url_for("dashboard"))
+
+        return render_template("edit_product.html", product=product)
+
+    @app.route("/products/<int:product_id>/delete", methods=["POST"])
+    @login_required
+    def delete_product_route(product_id):
+        product = ProductRepository.find_for_user(product_id, session["user_id"])
+        if product is None:
+            flash("No se pudo eliminar el producto.", "danger")
         else:
-            flash("No se pudo actualizar el producto.", "danger")
+            ProductRepository.delete(product)
+            flash("Producto eliminado correctamente.", "success")
         return redirect(url_for("dashboard"))
 
-    return render_template("edit_product.html", product=product)
+    @app.route("/api/health")
+    def api_health():
+        return jsonify({
+            "status": "ok",
+            "database": "mysql" if app.config["SQLALCHEMY_DATABASE_URI"].startswith("mysql") else "sqlite",
+        })
 
+    @app.route("/api/products", methods=["GET", "POST"])
+    @login_required
+    def api_products():
+        if request.method == "GET":
+            products = ProductRepository.list_for_user(session["user_id"])
+            return jsonify({"products": [product.to_dict() for product in products]})
 
-@app.route("/products/<int:product_id>/delete", methods=["POST"])
-@login_required
-def delete_product_route(product_id):
-    deleted = delete_product(product_id, session["user_id"])
-    if deleted:
-        flash("Producto eliminado correctamente.", "success")
-    else:
-        flash("No se pudo eliminar el producto.", "danger")
-    return redirect(url_for("dashboard"))
-
-
-@app.route("/api/health")
-def api_health():
-    return jsonify({"status": "ok", "db_available": DB_AVAILABLE})
-
-
-@app.route("/api/products", methods=["GET", "POST"])
-@login_required
-def api_products():
-    if request.method == "GET":
-        result = list_products(session["user_id"])
-        serialized = []
-        for item in result:
-            if isinstance(item, dict):
-                serialized.append({
-                    "id": item["id"],
-                    "name": item["name"],
-                    "description": item.get("description", ""),
-                    "price": float(item["price"]),
-                    "stock": int(item["stock"]),
-                })
-            else:
-                serialized.append(product_to_dict(item))
-        return jsonify({"products": serialized})
-
-    payload = request.get_json(silent=True) or request.form
-    name = (payload.get("name") or "").strip()
-    description = (payload.get("description") or "").strip()
-    price = payload.get("price")
-    stock = payload.get("stock")
-
-    if not name or price is None or stock is None:
-        return jsonify({"error": "name, price and stock are required"}), 400
-
-    try:
-        price_value = float(price)
-        stock_value = int(stock)
-    except (TypeError, ValueError):
-        return jsonify({"error": "price and stock must be valid numbers"}), 400
-
-    product = create_product(session["user_id"], name, description, price_value, stock_value)
-    return jsonify({"message": "Product created", "product": product}), 201
-
-
-@app.route("/api/products/<int:product_id>", methods=["GET", "PUT", "DELETE"])
-@login_required
-def api_product_detail(product_id):
-    product = get_product_by_id(product_id, session["user_id"])
-    if product is None:
-        return jsonify({"error": "Product not found"}), 404
-
-    if request.method == "GET":
-        if isinstance(product, dict):
-            item = {
-                "id": product["id"],
-                "user_id": product["user_id"],
-                "name": product["name"],
-                "description": product.get("description", ""),
-                "price": float(product["price"]),
-                "stock": int(product["stock"]),
-            }
-        else:
-            item = product_to_dict(product)
-        return jsonify(item)
-
-    if request.method == "PUT":
         payload = request.get_json(silent=True) or request.form
-        name = (payload.get("name") or product["name"]).strip()
-        description = (payload.get("description") or product.get("description", "")).strip()
-        price = payload.get("price", product["price"])
-        stock = payload.get("stock", product["stock"])
+        name, description, price, stock, errors = parse_product(
+            payload.get("name"),
+            payload.get("description"),
+            payload.get("price"),
+            payload.get("stock"),
+        )
+        if errors:
+            return jsonify({"error": "; ".join(errors)}), 400
 
-        try:
-            updated = update_product(product_id, session["user_id"], name, description, float(price), int(stock))
-        except (TypeError, ValueError):
-            return jsonify({"error": "Invalid values for price or stock"}), 400
+        product = ProductRepository.create(
+            session["user_id"], name, description, price, stock
+        )
+        return jsonify({"message": "Product created", "product": product.to_dict()}), 201
 
-        if updated is None:
+    @app.route("/api/products/<int:product_id>", methods=["GET", "PUT", "DELETE"])
+    @login_required
+    def api_product_detail(product_id):
+        product = ProductRepository.find_for_user(product_id, session["user_id"])
+        if product is None:
             return jsonify({"error": "Product not found"}), 404
-        return jsonify({"message": "Product updated", "product": updated})
 
-    deleted = delete_product(product_id, session["user_id"])
-    if not deleted:
-        return jsonify({"error": "Product not found"}), 404
-    return jsonify({"message": "Product deleted"})
+        if request.method == "GET":
+            return jsonify(product.to_dict())
+
+        if request.method == "PUT":
+            payload = request.get_json(silent=True) or request.form
+            name, description, price, stock, errors = parse_product(
+                payload.get("name", product.name),
+                payload.get("description", product.description),
+                payload.get("price", product.price),
+                payload.get("stock", product.stock),
+            )
+            if errors:
+                return jsonify({"error": "; ".join(errors)}), 400
+            updated = ProductRepository.update(product, name, description, price, stock)
+            return jsonify({"message": "Product updated", "product": updated.to_dict()})
+
+        ProductRepository.delete(product)
+        return jsonify({"message": "Product deleted"})
+
+    @app.errorhandler(429)
+    def rate_limit_handler(error):
+        if request.path.startswith("/api/"):
+            return jsonify({"error": "Too many requests"}), 429
+        flash("Demasiados intentos. Espera antes de volver a intentarlo.", "warning")
+        return redirect(request.referrer or url_for("login")), 429
+
+
+def establish_session(user):
+    session.clear()
+    session.permanent = True
+    session["user_id"] = user.id
+    session["user_name"] = user.name
+    session["csrf_token"] = secrets.token_hex(32)
+
+
+app = create_app()
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5000")), debug=True)
+    app.run(
+        host="127.0.0.1",
+        port=int(os.getenv("PORT", "5000")),
+        debug=os.getenv("FLASK_DEBUG", "false").lower() == "true",
+    )
