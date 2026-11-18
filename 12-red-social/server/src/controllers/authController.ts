@@ -5,7 +5,19 @@ import prisma from '../utils/db'
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, username, password } = req.body
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : ''
+    const username = typeof req.body.username === 'string' ? req.body.username.trim() : ''
+    const password = typeof req.body.password === 'string' ? req.body.password : ''
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Email inválido' })
+    }
+    if (!/^[a-zA-Z0-9_.]{3,30}$/.test(username)) {
+      return res.status(400).json({ error: 'El usuario debe tener entre 3 y 30 caracteres alfanuméricos' })
+    }
+    if (password.length < 8 || password.length > 72) {
+      return res.status(400).json({ error: 'La contraseña debe tener entre 8 y 72 caracteres' })
+    }
 
     const existingUser = await prisma.user.findFirst({
       where: { OR: [{ email }, { username }] }
@@ -35,7 +47,11 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : ''
+    const password = typeof req.body.password === 'string' ? req.body.password : ''
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña son requeridos' })
+    }
     const user = await prisma.user.findFirst({ where: { OR: [{ email }, { username: email }] } })
 
     if (!user) return res.status(401).json({ error: 'Invalid credentials' })

@@ -9,8 +9,9 @@ export const api = {
       ...options.headers
     }
     const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers })
-    if (!response.ok) throw new Error('Request failed')
-    return response.json()
+    const data = await response.json().catch(() => null)
+    if (!response.ok) throw new Error(data?.error || `Request failed (${response.status})`)
+    return data
   },
 
   async get(endpoint: string) {

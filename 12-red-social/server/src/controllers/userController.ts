@@ -50,7 +50,10 @@ export const toggleFollow = async (req: Request, res: Response) => {
 
 export const searchUsers = async (req: Request, res: Response) => {
   try {
-    const { query } = req.query
+    const query = typeof req.query.query === 'string' ? req.query.query.trim() : ''
+    if (!query || query.length > 100) {
+      return res.status(400).json({ error: 'La búsqueda debe tener entre 1 y 100 caracteres' })
+    }
     const users = await prisma.user.findMany({
       where: {
         OR: [
