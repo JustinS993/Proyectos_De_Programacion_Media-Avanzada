@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
-import jwt from 'jsonwebtoken'
 import prisma from '../utils/db'
+import { verifyAccessToken } from '../utils/tokens'
 
 declare global {
   namespace Express {
@@ -15,17 +15,18 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     if (!process.env.JWT_SECRET) {
       return res.status(500).json({ error: 'Server authentication is not configured' })
     }
-    const token = req.headers.authorization?.split(' ')[1]
+    const authorization = req.headers.authorization
+    const token = authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined
     if (!token) return res.status(401).json({ error: 'No token provided' })
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string }
-    const user = await prisma.user.findUnique({ where: { id: decoded.userId } })
+    const decoded = verifyAccessToken(token)
+    const user = await prisma.user.findUnique({ where: { id: decoded.sub } })
 
     if (!user) return res.status(401).json({ error: 'Invalid token' })
 
-    req.userId = decoded.userId
+    req.userId = decoded.sub
     next()
-  } catch (error) {
+  } catch {
     res.status(401).json({ error: 'Authentication failed' })
   }
 }
