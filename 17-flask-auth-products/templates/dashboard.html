@@ -46,7 +46,7 @@
             <h3 class="mb-1">Productos</h3>
             <small class="text-muted">Listado del usuario: {{ user['name'] if user else 'Usuario' }}</small>
           </div>
-          <a href="{{ url_for('api_products') }}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener">Ver API JSON</a>
+          <a href="{{ url_for('api.products') }}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener">Ver API JSON</a>
         </div>
 
         {% if products %}
@@ -70,8 +70,8 @@
                     <td>{{ product.stock }}</td>
                     <td class="text-center">
                       <div class="btn-group btn-group-sm" role="group">
-                        <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn btn-outline-primary">Editar</a>
-                        <form method="POST" action="{{ url_for('delete_product_route', product_id=product.id) }}" onsubmit="return confirm('¿Deseas eliminar este producto?');">
+                        <a href="{{ url_for('web.edit_product', product_id=product.id) }}" class="btn btn-outline-primary">Editar</a>
+                        <form method="POST" action="{{ url_for('web.delete_product', product_id=product.id) }}" onsubmit="return confirm('¿Deseas eliminar este producto?');">
                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                           <button type="submit" class="btn btn-outline-danger">Eliminar</button>
                         </form>
