@@ -40,7 +40,7 @@ Red social moderna con React, TypeScript, Node.js, PostgreSQL, Redis y Socket.io
 1. `cd server`
 2. Instalar dependencias: `npm install`
 3. Copiar `.env.example` a `.env` y configurar variables
-4. Configurar la base de datos: `npx prisma migrate dev --name init`
+4. Aplicar las migraciones incluidas: `npm run db:deploy`. Para generar nuevas migraciones en desarrollo: `npm run db:migrate -- --name nombre_del_cambio`.
 5. Iniciar servidor: `npm run dev`
 
 ### Frontend
@@ -65,8 +65,23 @@ Red social moderna con React, TypeScript, Node.js, PostgreSQL, Redis y Socket.io
 ## API Endpoints
 
 ### Autenticación
-- `POST /api/auth/register` - Registro
+- `POST /api/auth/register` - Registro; devuelve access token corto y configura refresh token HttpOnly
 - `POST /api/auth/login` - Inicio de sesión
+- `POST /api/auth/refresh` - Rotar refresh token y recibir un nuevo access token
+- `POST /api/auth/logout` - Revocar refresh token y cerrar sesión
+
+Los access tokens duran 15 minutos y solo se guardan en memoria en el cliente. El refresh token se almacena como hash en PostgreSQL y se envía en una cookie HttpOnly, SameSite=Lax y Secure en producción. La rotación revoca tokens ya usados y, ante una reutilización detectada, revoca la familia de sesión; los tokens expirados se limpian durante la renovación. Configura `JWT_SECRET` con un valor aleatorio de al menos 32 caracteres. Para frontend y API en sitios distintos, configura `REFRESH_COOKIE_SECURE=true` y `REFRESH_COOKIE_SAME_SITE=none` al servir por HTTPS.
+
+El chat usa `socket.handshake.auth.token` con el access token. El servidor obtiene el remitente del `sub` del JWT; el cliente no envía `senderId`. Cada usuario puede enviar hasta 20 eventos de chat cada 10 segundos por instancia del servidor.
+
+Si la base ya tenía tablas creadas antes de incluir Prisma Migrate, haz un respaldo y comprueba que coincide con `server/prisma/schema.prisma`. Solo entonces marca la migración inicial como aplicada con `npx prisma migrate resolve --applied 20261122190000_init`; no ejecutes esto sobre una base vacía.
+
+### Pruebas
+
+```bash
+cd server
+npm test
+```
 
 ### Posts
 - `GET /api/posts/feed` - Obtener feed
