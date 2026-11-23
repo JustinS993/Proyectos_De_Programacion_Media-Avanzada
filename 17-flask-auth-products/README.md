@@ -1,25 +1,28 @@
-# Flask Auth + Products + SQLite/MySQL API
+# Flask Auth + Products API
 
-Este proyecto es una aplicación web de gestión de productos con autenticación de usuarios, interfaz moderna con Bootstrap y una API REST en Flask.
+Aplicación Flask para administrar productos con autenticación, vistas Bootstrap y una API JSON. Las páginas HTML y API comparten servicios, validación y repositorios.
 
 ## Características
 
 - Registro e inicio de sesión
 - Autenticación por sesión
 - Dashboard con gestión de productos
-- CRUD de productos con SQLite persistente o MySQL opcional
-- Protección CSRF y sesiones con rotación
+- CRUD persistente con SQLite por defecto; PostgreSQL y MySQL configurables
+- Protección CSRF en formularios y solicitudes API con sesión
 - Validación de usuarios y productos
-- Arquitectura con app factory, modelos y repositorios
+- Arquitectura con app factory, blueprints, servicios, modelos y repositorios
 - API REST con JSON
 - Diseño moderno con Bootstrap 5
 
 ## Estructura del proyecto
 
-- `app.py` — app factory y rutas
+- `app.py` — configuración, fábrica Flask y seguridad común
 - `models.py` — modelos SQLAlchemy
 - `repositories.py` — acceso a datos
-- `validation.py` — validaciones
+- `services/` — lógica y operaciones de negocio
+- `routes/` — blueprints HTML y API
+- `security.py` — autenticación de sesión
+- `validation.py` — validación compartida entre HTML y API
 - `extensions.py` — SQLAlchemy y Flask-Limiter
 - `templates/` — vistas HTML
 - `static/styles.css` — estilos personalizados
@@ -29,7 +32,8 @@ Este proyecto es una aplicación web de gestión de productos con autenticación
 ## Requisitos
 
 - Python 3.10+
-- MySQL local (opcional para la base de datos real)
+- SQLite se usa por defecto
+- PostgreSQL o MySQL opcionales
 
 ## Instalación
 
@@ -93,6 +97,13 @@ http://127.0.0.1:5000
 
 Devuelve el estado del servidor.
 
+### Autenticación
+
+- `GET /api/csrf-token` — obtiene un token CSRF y crea la sesión necesaria
+- `POST /api/auth/register` — registra `{name, email, password, confirm_password}`
+- `POST /api/auth/login` — inicia sesión con `{email, password}`
+- `POST /api/auth/logout` — cierra la sesión
+
 ### GET /api/products
 
 Lista los productos del usuario autenticado.
@@ -113,21 +124,26 @@ Actualiza un producto.
 
 Elimina un producto.
 
-## Persistencia
+## Persistencia y configuración
 
-Por defecto usa SQLite en `instance/products.db`. Para usar MySQL, configura `USE_MYSQL=true` y las variables `MYSQL_*` del archivo `.env`.
-También puedes definir `DATABASE_URL` con una URL SQLAlchemy completa.
+Por defecto usa SQLite persistente en `instance/products.db`. Para PostgreSQL, configura `DATABASE_URL`, por ejemplo `postgresql://usuario:clave@localhost:5432/productos`. El proyecto utiliza psycopg 3. MySQL sigue disponible con `USE_MYSQL=true` y las variables `MYSQL_*`.
+
+En producción, configura un `SECRET_KEY` aleatorio y `APP_ENV=production`; las cookies de sesión serán Secure por defecto. No uses `SECRET_KEY` vacío ni compartas el archivo `.env`.
 
 ## Seguridad
 
 - Las contraseñas se almacenan con hash seguro.
-- Los formularios usan CSRF.
+- Formularios HTML y escrituras API validan CSRF con token de sesión.
 - Las sesiones usan cookies HttpOnly, SameSite=Lax y expiración de una hora.
-- Las rutas API exigen autenticación por sesión.
+- La API requiere una sesión autenticada para operaciones de productos.
 - Los intentos de login y registro tienen límites.
+
+Para consumir la API desde el navegador, primero solicita `GET /api/csrf-token` con credenciales, conserva la cookie de sesión y envía el valor `csrf_token` como `X-CSRF-Token` en solicitudes de escritura. El API y las páginas HTML llaman a los mismos servicios y validadores.
 
 ## Pruebas
 
 ```bash
 python -m pytest -v
 ```
+
+Las pruebas usan SQLite temporal, por lo que no requieren un servidor de base de datos.
