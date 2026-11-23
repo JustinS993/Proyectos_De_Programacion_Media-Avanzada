@@ -9,12 +9,22 @@ import remarkGfm from 'remark-gfm'
 export const Home: React.FC = () => {
   const { user, logout } = useAuth()
   const [content, setContent] = useState('')
+  const [logoutError, setLogoutError] = useState('')
   const queryClient = useQueryClient()
 
   const { data: posts = [] } = useQuery({
     queryKey: ['feed'],
-    queryFn: () => api.get('/posts/feed')
+    queryFn: () => api.get<Post[]>('/posts/feed')
   })
+
+  const handleLogout = async () => {
+    setLogoutError('')
+    try {
+      await logout()
+    } catch (error) {
+      setLogoutError(error instanceof Error ? error.message : 'No se pudo cerrar la sesión en el servidor.')
+    }
+  }
 
   const createPost = useMutation({
     mutationFn: (data: { content: string }) => api.post('/posts', data),
@@ -45,10 +55,14 @@ export const Home: React.FC = () => {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">RedSocial</h1>
           <div className="flex items-center gap-4">
             <span className="text-gray-700">@{user?.username}</span>
-            <button onClick={logout} className="text-gray-600 hover:text-red-600 font-medium">Cerrar Sesión</button>
+            <button onClick={handleLogout} className="text-gray-600 hover:text-red-600 font-medium">Cerrar Sesión</button>
           </div>
         </div>
       </nav>
+
+      {logoutError && (
+        <p role="alert" className="max-w-6xl mx-auto px-4 pt-3 text-sm text-red-600">{logoutError}</p>
+      )}
       
       <main className="max-w-2xl mx-auto px-4 py-8">
         <div className="bg-white rounded-xl shadow-md p-6 mb-6">

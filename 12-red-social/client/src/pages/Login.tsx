@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const { login } = useAuth()
+  const { login, sessionError } = useAuth()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -16,7 +16,7 @@ export const Login: React.FC = () => {
     try {
       await login(email, password)
     } catch (err) {
-      setError('Invalid credentials')
+      setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión.')
     } finally {
       setLoading(false)
     }
@@ -47,8 +47,8 @@ export const Login: React.FC = () => {
               required
             />
           </div>
-          {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">{error}</div>
+          {(error || sessionError) && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">{error || sessionError}</div>
           )}
           <button
             type="submit"

@@ -6,7 +6,7 @@ export const Register: React.FC = () => {
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const { register } = useAuth()
+  const { register, sessionError } = useAuth()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -17,7 +17,7 @@ export const Register: React.FC = () => {
     try {
       await register(email, username, password)
     } catch (err) {
-      setError('Registration failed')
+      setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta.')
     } finally {
       setLoading(false)
     }
@@ -58,8 +58,8 @@ export const Register: React.FC = () => {
               required
             />
           </div>
-          {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">{error}</div>
+          {(error || sessionError) && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">{error || sessionError}</div>
           )}
           <button
             type="submit"
