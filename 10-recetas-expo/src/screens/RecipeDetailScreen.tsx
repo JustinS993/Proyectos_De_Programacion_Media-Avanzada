@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { getRecipeDetails } from '../services/spoonacular';
+import { getRecipeDetails, RecipeApiError } from '../services/spoonacular';
 import { Recipe } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,19 +22,47 @@ export const RecipeDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { recipeId } = route.params;
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const { isFavorite, addFavorite, removeFavorite, addToShoppingList } = useAppContext();
   const favorite = recipe ? isFavorite(recipe.id) : false;
 
   useEffect(() => {
-    loadRecipe();
-  }, [recipeId]);
-
-  const loadRecipe = async () => {
+    let active = true;
     setLoading(true);
-    const data = await getRecipeDetails(recipeId);
-    setRecipe(data);
-    setLoading(false);
-  };
+    setRecipe(null);
+    setError(null);
+    setWarning(null);
+    getRecipeDetails(recipeId)
+      .then((result) => {
+        if (!active) return;
+        setRecipe(result.recipe);
+        if (result.warning?.kind === 'rate_limited') {
+          setWarning('Mostrando datos guardados: el proveedor limitó las consultas.');
+        } else if (result.warning?.kind === 'network') {
+          setWarning('Sin conexión con el servidor; se muestran datos guardados.');
+        } else if (result.warning) {
+          setWarning('El servidor no pudo actualizar los datos guardados.');
+        }
+      })
+      .catch((requestError: unknown) => {
+        if (!active) return;
+        if (requestError instanceof RecipeApiError && requestError.kind === 'rate_limited') {
+          setError('Se alcanzó el límite de consultas de Spoonacular. Inténtalo más tarde.');
+        } else if (requestError instanceof RecipeApiError && requestError.kind === 'network') {
+          setError('No hay conexión con el servidor de recetas.');
+        } else {
+          setError(requestError instanceof Error ? requestError.message : 'No se pudo cargar la receta.');
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [recipeId, reloadKey]);
 
   const toggleFavorite = () => {
     if (!recipe) return;
@@ -57,7 +85,10 @@ export const RecipeDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   if (!recipe) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <Text style={styles.errorText}>No se encontró la receta</Text>
+        <Text style={styles.errorText}>{error || 'No se encontró la receta'}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={() => setReloadKey((key) => key + 1)}>
+          <Text style={styles.retryText}>Reintentar</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -84,6 +115,7 @@ export const RecipeDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         </View>
 
         <View style={styles.content}>
+          {warning && <Text style={styles.warningText}>{warning}</Text>}
           <Text style={styles.title}>{recipe.title}</Text>
 
           <View style={styles.statsContainer}>
@@ -161,6 +193,22 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#ef4444',
     fontSize: 18,
+  },
+  warningText: {
+    color: '#fcd34d',
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  retryButton: {
+    marginTop: 16,
+    backgroundColor: '#f59e0b',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  retryText: {
+    color: '#0f172a',
+    fontWeight: '700',
   },
   imageContainer: {
     height: 300,
