@@ -8,7 +8,10 @@ Aplicación de notas con autenticación, soporte para Markdown, carpetas y búsq
 - 📝 **CRUD de Notas**: Crea, lee, actualiza y borra notas
 - 📂 **Carpetas**: Organiza tus notas en carpetas
 - 📖 **Markdown**: Soporte completo para Markdown con GFM
-- 🔍 **Búsqueda**: Busca notas por título o contenido
+- 🔍 **Búsqueda**: Busca en el servidor por título o contenido con debounce
+- 💾 **Autoguardado**: Guarda borradores automáticamente y muestra el estado de sincronización
+- 🛟 **Edición segura**: Actualizaciones optimistas con reversión y errores visibles
+- 📂 **Carpetas seguras**: Eliminar una carpeta conserva sus notas y las deja sin carpeta
 - ☁️ **Supabase**: Persistencia en tiempo real
 
 ## Configuración
@@ -67,6 +70,11 @@ Aplicación de notas con autenticación, soporte para Markdown, carpetas y búsq
    ```bash
    npm run dev
    ```
+
+## Validación
+
+- `npm run build`: compila TypeScript y genera la aplicación de producción.
+- `npm run lint`: actualmente no puede ejecutarse porque el proyecto usa ESLint 9, que requiere un archivo de configuración `eslint.config.js`, `eslint.config.mjs` o `eslint.config.cjs`, y este repositorio no incluye ninguno. ESLint termina con el error “ESLint couldn't find an eslint.config.(js|mjs|cjs) file.” Para habilitar el lint hay que añadir una configuración flat de ESLint.
 
 ## Tecnologías
 
