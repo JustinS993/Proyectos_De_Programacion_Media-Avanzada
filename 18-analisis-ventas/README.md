@@ -11,6 +11,7 @@ Los datos de ejemplo y los importes de los CSV cargados se interpretan como dól
 - Comparación entre dos períodos seleccionables, con promedio diario para facilitar la comparación entre rangos de distinta duración.
 - Identificación del producto con menor margen y tabla de rentabilidad por producto.
 - El descuento promedio es el promedio simple de los descuentos registrados en las filas filtradas.
+- Las cargas de CSV/datos de muestra, filtros, indicadores, agrupaciones y exportación se almacenan con la caché de datos de Streamlit y se invalidan cuando cambian sus entradas.
 - Selección de moneda (USD, EUR, COP o MXN) y de formato de fechas.
 - Tendencia mensual y comparaciones por categoría, región y producto.
 - Carga de CSV separados por coma, punto y coma o tabulador; acepta UTF-8 y Windows-1252.
@@ -42,6 +43,20 @@ El archivo debe incluir estas columnas (el orden no importa; los importes se int
 `Fecha`, `Pedido`, `Region`, `Categoria`, `Producto`, `Unidades`, `Precio_unitario`, `Descuento`, `Ventas`, `Costo`, `Ganancia`
 
 En la barra lateral, selecciona el formato de fecha que corresponde a tu archivo para evitar ambigüedades entre día y mes. `Descuento` debe expresarse entre `0` y `1` (por ejemplo, `0.15` equivale a 15 %). Los valores numéricos no deben llevar símbolos de moneda. En archivos separados por punto y coma puedes usar coma decimal.
+
+Se rechazan los valores numéricos no finitos (`NaN`, `Infinity`, `-Infinity`) y las filas que repiten la misma combinación de `Fecha` y `Pedido`. Una misma fecha puede aparecer en varios pedidos distintos. Los campos de texto delimitados (por ejemplo, un producto con comas en CSV separado por punto y coma) deben ir entre comillas conforme al formato CSV.
+
+## Fórmulas del análisis
+
+- **Ventas totales:** suma de `Ventas` en las filas filtradas.
+- **Pedidos:** cantidad de valores distintos de `Pedido`.
+- **Ticket promedio:** ventas totales divididas entre pedidos distintos; es cero si no hay pedidos.
+- **Ganancia total:** suma de `Ganancia` suministrada por el archivo.
+- **Margen de ganancia:** ganancia total dividida entre ventas totales, por 100; es cero si no hay ventas.
+- **Descuento promedio:** media aritmética de `Descuento`, por 100; no está ponderada por unidades ni por ventas.
+- **Promedio diario:** ventas del período divididas por todos los días calendario del intervalo, incluidos los días sin ventas.
+- **Cambio entre períodos:** `(ventas B - ventas A) / ventas A * 100`; se muestra como no disponible cuando A no tiene ventas.
+- La tasa de cambio multiplica los importes mostrados y exportados; no modifica los datos USD originales ni recalcula `Ganancia`.
 
 Al seleccionar EUR, COP o MXN, ingresa manualmente cuántas unidades de esa moneda equivalen a 1 USD. La tasa se aplica a importes mostrados y descargados, no modifica el archivo original.
 
