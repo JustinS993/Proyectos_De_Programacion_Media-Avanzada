@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import csv
 import random
+from collections.abc import Collection
+from math import fsum, isfinite
 from io import StringIO
 from datetime import date, timedelta
 
@@ -44,6 +46,31 @@ NUMERIC_COLUMNS = (
     "Ganancia",
 )
 IDENTIFIER_COLUMNS = ("Pedido", "Region", "Categoria", "Producto")
+
+
+def _finite_sum(values: pd.Series, column_name: str) -> float:
+    """Suma valores finitos sin ocultar un desbordamiento numérico."""
+    if not values.map(isfinite).all():
+        raise ValueError(f"Los valores de '{column_name}' deben ser finitos.")
+    try:
+        total = fsum(float(value) for value in values)
+    except OverflowError as error:
+        raise ValueError(
+            f"La suma de '{column_name}' excede el rango numérico admitido."
+        ) from error
+    if not isfinite(total):
+        raise ValueError(
+            f"La suma de '{column_name}' excede el rango numérico admitido."
+        )
+    return total
+
+
+def _finite_result(value: float, description: str) -> float:
+    if not isfinite(value):
+        raise ValueError(
+            f"El resultado de {description} excede el rango numérico admitido."
+        )
+    return value
 
 
 def generate_sales_data(order_count: int = 720, seed: int = 42) -> pd.DataFrame:
@@ -107,12 +134,18 @@ def validate_sales_data(
 
     clean_data = clean_data.loc[:, list(SALES_COLUMNS)].copy()
     date_values = clean_data["Fecha"].astype("string").str.strip()
-    expected_date_format = (
-        "%d/%m/%Y" if date_format == "DD/MM/YYYY" else "%m/%d/%Y"
-    )
+    expected_date_formats = {
+        "DD/MM/YYYY": "%d/%m/%Y",
+        "MM/DD/YYYY": "%m/%d/%Y",
+        "YYYY-MM-DD": "%Y-%m-%d",
+    }
+    if date_format not in expected_date_formats:
+        raise ValueError(
+            "Formato de fecha no compatible. Usa DD/MM/YYYY, MM/DD/YYYY o YYYY-MM-DD."
+        )
     parsed_dates = pd.to_datetime(
         date_values,
-        format=expected_date_format,
+        format=expected_date_formats[date_format],
         errors="coerce",
     )
     iso_dates = pd.to_datetime(date_values, format="ISO8601", errors="coerce")
@@ -125,19 +158,39 @@ def validate_sales_data(
         )
 
     for column in NUMERIC_COLUMNS:
-        clean_data[column] = pd.to_numeric(clean_data[column], errors="coerce")
-        invalid_numbers = clean_data[column].isna()
+        raw_values = clean_data[column]
+        numeric_values = pd.to_numeric(raw_values, errors="coerce")
+        explicit_non_finite = raw_values.astype("string").str.strip().str.lower().isin(
+            {"nan", "+nan", "-nan"}
+        )
+        invalid_numbers = numeric_values.isna() & raw_values.notna() & ~explicit_non_finite
         if invalid_numbers.any():
             raise ValueError(
                 f"Hay {int(invalid_numbers.sum())} valor(es) no numérico(s) "
                 f"en '{column}'. Usa números sin símbolos de moneda."
             )
+        clean_data[column] = numeric_values
 
     for column in IDENTIFIER_COLUMNS:
         clean_data[column] = clean_data[column].astype("string").str.strip()
         if clean_data[column].isna().any() or clean_data[column].eq("").any():
             raise ValueError(
                 f"Hay celdas vacías en '{column}'. Completa esos datos antes de cargar el CSV."
+            )
+    duplicate_order_dates = clean_data.duplicated(
+        subset=["Fecha", "Pedido"], keep=False
+    )
+    if duplicate_order_dates.any():
+        raise ValueError(
+            f"Hay {int(duplicate_order_dates.sum())} registro(s) con la misma "
+            "combinación de 'Fecha' y 'Pedido'."
+        )
+    for column in NUMERIC_COLUMNS:
+        non_finite = ~clean_data[column].map(isfinite)
+        if non_finite.any():
+            raise ValueError(
+                f"Hay {int(non_finite.sum())} valor(es) no finito(s) en '{column}'. "
+                "Usa números finitos."
             )
     if (clean_data["Unidades"] <= 0).any():
         raise ValueError("Todas las ventas deben tener al menos una unidad.")
@@ -186,30 +239,63 @@ def read_sales_csv(content: bytes, date_format: str = "DD/MM/YYYY") -> pd.DataFr
     return validate_sales_data(data, date_format)
 
 
+def filter_sales_data(
+    data: pd.DataFrame,
+    start_date: date,
+    end_date: date,
+    selected_regions: Collection[str] | None = None,
+    selected_categories: Collection[str] | None = None,
+    selected_products: Collection[str] | None = None,
+) -> pd.DataFrame:
+    """Filtra por intervalo inclusivo y dimensiones opcionales."""
+    if start_date > end_date:
+        raise ValueError("La fecha final debe ser igual o posterior a la inicial.")
+
+    parsed_dates = pd.to_datetime(data["Fecha"], errors="coerce")
+    if parsed_dates.isna().any():
+        raise ValueError("La columna 'Fecha' contiene valores inválidos.")
+    mask = parsed_dates.dt.date.between(start_date, end_date)
+    for column, selected_values in (
+        ("Region", selected_regions),
+        ("Categoria", selected_categories),
+        ("Producto", selected_products),
+    ):
+        if selected_values is not None:
+            mask &= data[column].isin(selected_values)
+    return data.loc[mask].copy()
+
+
 def calculate_kpis(data: pd.DataFrame) -> dict[str, float | int]:
     """Calcula los indicadores principales del conjunto de ventas."""
-    total_sales = float(data["Ventas"].sum())
-    total_profit = float(data["Ganancia"].sum())
+    total_sales = _finite_sum(data["Ventas"], "Ventas")
+    total_profit = _finite_sum(data["Ganancia"], "Ganancia")
     order_count = int(data["Pedido"].nunique())
     return {
         "ventas_totales": total_sales,
         "pedidos": order_count,
-        "ticket_promedio": total_sales / order_count if order_count else 0.0,
-        "margen_porcentaje": total_profit / total_sales * 100
-        if total_sales
-        else 0.0,
+        "ticket_promedio": _finite_result(
+            total_sales / order_count if order_count else 0.0,
+            "el ticket promedio",
+        ),
+        "margen_porcentaje": _finite_result(
+            total_profit / total_sales * 100 if total_sales else 0.0,
+            "el margen de ganancia",
+        ),
         "ganancia_total": total_profit,
-        "descuento_promedio": float(data["Descuento"].mean() * 100)
-        if not data.empty
-        else 0.0,
+        "descuento_promedio": _finite_result(
+            _finite_sum(data["Descuento"], "Descuento") / len(data) * 100
+            if not data.empty
+            else 0.0,
+            "el descuento promedio",
+        ),
     }
 
 
 def calculate_product_profitability(data: pd.DataFrame) -> pd.DataFrame:
     """Resume ventas, ganancia y margen para cada producto."""
     product_totals = data.groupby("Producto", as_index=False).agg(
-        Ventas=("Ventas", "sum"),
-        Ganancia=("Ganancia", "sum"),
+        Ventas=("Ventas", lambda values: _finite_sum(values, "Ventas")),
+        Ganancia=("Ganancia", lambda values: _finite_sum(values, "Ganancia")),
     )
     product_totals["Margen_porcentaje"] = (
         product_totals["Ganancia"]
@@ -217,6 +303,8 @@ def calculate_product_profitability(data: pd.DataFrame) -> pd.DataFrame:
         .mul(100)
         .fillna(0)
     )
+    if not product_totals["Margen_porcentaje"].map(isfinite).all():
+        raise ValueError("El margen por producto excede el rango numérico admitido.")
     return product_totals.sort_values(
         ["Margen_porcentaje", "Ganancia"], ascending=[True, True]
     ).reset_index(drop=True)
@@ -237,11 +325,11 @@ def calculate_period_metrics(
             "pedidos": 0,
         }
 
-    sales = float(data["Ventas"].sum())
+    sales = _finite_sum(data["Ventas"], "Ventas")
     return {
         "ventas_totales": sales,
-        "ganancia_total": float(data["Ganancia"].sum()),
-        "ventas_diarias": sales / days,
+        "ganancia_total": _finite_sum(data["Ganancia"], "Ganancia"),
+        "ventas_diarias": _finite_result(sales / days, "las ventas diarias"),
         "pedidos": int(data["Pedido"].nunique()),
     }
 
@@ -257,6 +345,15 @@ def build_analysis_summary(
     exchange_rate: float,
 ) -> pd.DataFrame:
     """Crea un resumen descargable con métricas y comparación de períodos."""
+    if not isfinite(exchange_rate) or exchange_rate <= 0:
+        raise ValueError("La tasa de cambio debe ser un número finito mayor que cero.")
+
+    def format_amount(amount: float) -> str:
+        converted_amount = _finite_result(
+            amount * exchange_rate, "la conversión de moneda"
+        )
+        return f"{converted_amount:.2f} {currency_code}"
+
     sales_change = (
         (float(period_b["ventas_totales"]) - float(period_a["ventas_totales"]))
         / float(period_a["ventas_totales"])
@@ -264,6 +361,8 @@ def build_analysis_summary(
         if period_a["ventas_totales"]
         else None
     )
+    if sales_change is not None:
+        sales_change = _finite_result(sales_change, "la comparación de períodos")
     least_product = str(least_profitable["Producto"]) if least_profitable else "N/D"
     least_margin = (
         f"{float(least_profitable['Margen_porcentaje']):.2f}%"
@@ -271,7 +370,7 @@ def build_analysis_summary(
         else "N/D"
     )
     least_profit = (
-        f"{float(least_profitable['Ganancia']) * exchange_rate:.2f} {currency_code}"
+        format_amount(float(least_profitable["Ganancia"]))
         if least_profitable
         else "N/D"
     )
@@ -286,18 +385,18 @@ def build_analysis_summary(
         (
             "Período principal",
             "Ventas totales",
-            f"{float(kpis['ventas_totales']) * exchange_rate:.2f} {currency_code}",
+            format_amount(float(kpis["ventas_totales"])),
         ),
         ("Período principal", "Pedidos", str(kpis["pedidos"])),
         (
             "Período principal",
             "Ticket promedio",
-            f"{float(kpis['ticket_promedio']) * exchange_rate:.2f} {currency_code}",
+            format_amount(float(kpis["ticket_promedio"])),
         ),
         (
             "Período principal",
             "Ganancia total",
-            f"{float(kpis['ganancia_total']) * exchange_rate:.2f} {currency_code}",
+            format_amount(float(kpis["ganancia_total"])),
         ),
         (
             "Período principal",
@@ -316,13 +415,13 @@ def build_analysis_summary(
         (
             "Comparación",
             "Ventas período A",
-            f"{float(period_a['ventas_totales']) * exchange_rate:.2f} {currency_code}",
+            format_amount(float(period_a["ventas_totales"])),
         ),
         ("Comparación", f"Período B ({period_b_label})", ""),
         (
             "Comparación",
             "Ventas período B",
-            f"{float(period_b['ventas_totales']) * exchange_rate:.2f} {currency_code}",
+            format_amount(float(period_b["ventas_totales"])),
         ),
         (
             "Comparación",
@@ -332,12 +431,12 @@ def build_analysis_summary(
         (
             "Comparación",
             "Promedio diario período A",
-            f"{float(period_a['ventas_diarias']) * exchange_rate:.2f} {currency_code}",
+            format_amount(float(period_a["ventas_diarias"])),
         ),
         (
             "Comparación",
             "Promedio diario período B",
-            f"{float(period_b['ventas_diarias']) * exchange_rate:.2f} {currency_code}",
+            format_amount(float(period_b["ventas_diarias"])),
         ),
     ]
     return pd.DataFrame(rows, columns=["Sección", "Indicador", "Valor"])
