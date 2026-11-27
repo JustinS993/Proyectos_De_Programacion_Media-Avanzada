@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from io import BytesIO
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -14,6 +14,7 @@ from analytics import (
     calculate_kpis,
     calculate_period_metrics,
     calculate_product_profitability,
+    filter_sales_data,
     generate_sales_data,
     read_sales_csv,
 )
@@ -36,6 +37,124 @@ st.set_page_config(
     page_icon="📊",
     layout="wide",
 )
+
+
+@st.cache_data(show_spinner=False, ttl="1h", max_entries=2)
+def cached_sample_sales(order_count: int = 720, seed: int = 42) -> pd.DataFrame:
+    return generate_sales_data(order_count, seed)
+
+
+@st.cache_data(show_spinner=False, ttl="1h", max_entries=8)
+def cached_uploaded_sales(content: bytes, date_format: str) -> pd.DataFrame:
+    return read_sales_csv(content, date_format)
+
+
+@st.cache_data(show_spinner=False, ttl="1h", max_entries=64)
+def cached_filter_sales(
+    data: pd.DataFrame,
+    start_date: date,
+    end_date: date,
+    regions: tuple[str, ...],
+    categories: tuple[str, ...],
+    products: tuple[str, ...],
+) -> pd.DataFrame:
+    return filter_sales_data(
+        data,
+        start_date,
+        end_date,
+        selected_regions=regions,
+        selected_categories=categories,
+        selected_products=products,
+    )
+
+
+@st.cache_data(show_spinner=False, ttl="1h", max_entries=64)
+def cached_kpis(data: pd.DataFrame) -> dict[str, float | int]:
+    return calculate_kpis(data)
+
+
+@st.cache_data(show_spinner=False, ttl="1h", max_entries=64)
+def cached_product_profitability(data: pd.DataFrame) -> pd.DataFrame:
+    return calculate_product_profitability(data)
+
+
+@st.cache_data(show_spinner=False, ttl="1h", max_entries=64)
+def cached_period_metrics(
+    data: pd.DataFrame, period_start: date, period_end: date
+) -> dict[str, float | int]:
+    return calculate_period_metrics(data, period_start, period_end)
+
+
+@st.cache_data(show_spinner=False, ttl="1h", max_entries=64)
+def cached_analysis_summary(
+    kpis: dict[str, float | int],
+    period_a: dict[str, float | int],
+    period_b: dict[str, float | int],
+    least_profitable: dict[str, object] | None,
+    period_a_label: str,
+    period_b_label: str,
+    currency_code: str,
+    exchange_rate: float,
+) -> pd.DataFrame:
+    return build_analysis_summary(
+        kpis,
+        period_a,
+        period_b,
+        least_profitable,
+        period_a_label,
+        period_b_label,
+        currency_code,
+        exchange_rate,
+    )
+
+
+@st.cache_data(show_spinner=False, ttl="1h", max_entries=64)
+def cached_monthly_sales(data: pd.DataFrame) -> pd.DataFrame:
+    return (
+        data.set_index("Fecha")
+        .resample("MS")[["Ventas", "Ganancia"]]
+        .sum()
+        .reset_index()
+    )
+
+
+@st.cache_data(show_spinner=False, ttl="1h", max_entries=64)
+def cached_sales_by_category(data: pd.DataFrame) -> pd.DataFrame:
+    return data.groupby("Categoria", as_index=False)["Ventas"].sum().sort_values(
+        "Ventas", ascending=False
+    )
+
+
+@st.cache_data(show_spinner=False, ttl="1h", max_entries=64)
+def cached_sales_by_region(data: pd.DataFrame) -> pd.DataFrame:
+    return data.groupby("Region", as_index=False)["Ventas"].sum().sort_values(
+        "Ventas", ascending=False
+    )
+
+
+@st.cache_data(show_spinner=False, ttl="1h", max_entries=64)
+def cached_top_products(data: pd.DataFrame) -> pd.DataFrame:
+    return data.groupby("Producto", as_index=False)["Ventas"].sum().nlargest(
+        8, "Ventas"
+    )
+
+
+@st.cache_data(show_spinner=False, ttl="1h", max_entries=16)
+def cached_filtered_csv(
+    data: pd.DataFrame,
+    currency_code: str,
+    exchange_rate: float,
+    date_format: str,
+) -> bytes:
+    export_data = data.copy()
+    converted_amounts = export_data.loc[:, list(MONEY_COLUMNS)] * exchange_rate
+    if not np.isfinite(converted_amounts.to_numpy(dtype=float)).all():
+        raise ValueError("La tasa de cambio produce importes fuera del rango numérico.")
+    export_data.loc[:, list(MONEY_COLUMNS)] = converted_amounts
+    export_data.insert(0, "Moneda", currency_code)
+    export_data["Fecha"] = export_data["Fecha"].dt.strftime(date_format)
+    return export_data.to_csv(index=False).encode("utf-8-sig")
+
 
 st.title("📊 Análisis de ventas")
 st.caption(
@@ -80,7 +199,9 @@ uploaded_file = st.sidebar.file_uploader(
 
 if uploaded_file is not None:
     try:
-        sales_data = read_sales_csv(uploaded_file.getvalue(), streamlit_date_format)
+        sales_data = cached_uploaded_sales(
+            uploaded_file.getvalue(), streamlit_date_format
+        )
     except ValueError as error:
         st.error(f"No se pudo cargar el archivo: {error}")
         with st.expander("Errores frecuentes y cómo corregirlos"):
@@ -100,13 +221,19 @@ if uploaded_file is not None:
             )
         st.stop()
 else:
-    sales_data = generate_sales_data()
+    sales_data = cached_sample_sales()
 
 if currency_code != "USD" and exchange_rate is None:
     st.info("Selecciona una tasa de cambio en la barra lateral para continuar.")
     st.stop()
 
 exchange_rate = float(exchange_rate)
+converted_sales = (
+    sales_data.loc[:, list(MONEY_COLUMNS)].to_numpy(dtype=float) * exchange_rate
+)
+if not np.isfinite(converted_sales).all():
+    st.error("La tasa de cambio produce importes fuera del rango numérico.")
+    st.stop()
 currency_symbol = CURRENCIES[currency_code]
 
 
@@ -192,21 +319,26 @@ selected_products = st.sidebar.multiselect(
     "Producto", available_products, default=available_products
 )
 
-dimension_filter = (
-    sales_data["Region"].isin(selected_regions)
-    & sales_data["Categoria"].isin(selected_categories)
-    & sales_data["Producto"].isin(selected_products)
+region_filter = tuple(selected_regions)
+category_filter = tuple(selected_categories)
+product_filter = tuple(selected_products)
+filtered_data = cached_filter_sales(
+    sales_data,
+    start_date,
+    end_date,
+    region_filter,
+    category_filter,
+    product_filter,
 )
-main_mask = sales_data["Fecha"].dt.date.between(start_date, end_date)
-period_a_mask = sales_data["Fecha"].dt.date.between(*period_a)
-period_b_mask = sales_data["Fecha"].dt.date.between(*period_b)
+period_a_data = cached_filter_sales(
+    sales_data, *period_a, region_filter, category_filter, product_filter
+)
+period_b_data = cached_filter_sales(
+    sales_data, *period_b, region_filter, category_filter, product_filter
+)
 
-filtered_data = sales_data.loc[main_mask & dimension_filter].copy()
-period_a_data = sales_data.loc[period_a_mask & dimension_filter]
-period_b_data = sales_data.loc[period_b_mask & dimension_filter]
-
-period_a_metrics = calculate_period_metrics(period_a_data, *period_a)
-period_b_metrics = calculate_period_metrics(period_b_data, *period_b)
+period_a_metrics = cached_period_metrics(period_a_data, *period_a)
+period_b_metrics = cached_period_metrics(period_b_data, *period_b)
 
 st.subheader("Comparación de períodos")
 st.caption(
@@ -253,8 +385,8 @@ st.caption(
 if filtered_data.empty:
     st.info("No hay ventas para el período y los filtros seleccionados.")
 else:
-    kpis = calculate_kpis(filtered_data)
-    product_profitability = calculate_product_profitability(filtered_data)
+    kpis = cached_kpis(filtered_data)
+    product_profitability = cached_product_profitability(filtered_data)
     least_profitable = (
         product_profitability.iloc[0].to_dict()
         if not product_profitability.empty
@@ -293,27 +425,10 @@ else:
     display_data.loc[:, list(MONEY_COLUMNS)] = (
         display_data.loc[:, list(MONEY_COLUMNS)] * exchange_rate
     )
-    monthly_sales = (
-        display_data.set_index("Fecha")
-        .resample("MS")[["Ventas", "Ganancia"]]
-        .sum()
-        .reset_index()
-    )
-    sales_by_category = (
-        display_data.groupby("Categoria", as_index=False)["Ventas"]
-        .sum()
-        .sort_values("Ventas", ascending=False)
-    )
-    sales_by_region = (
-        display_data.groupby("Region", as_index=False)["Ventas"]
-        .sum()
-        .sort_values("Ventas", ascending=False)
-    )
-    top_products = (
-        display_data.groupby("Producto", as_index=False)["Ventas"]
-        .sum()
-        .nlargest(8, "Ventas")
-    )
+    monthly_sales = cached_monthly_sales(display_data)
+    sales_by_category = cached_sales_by_category(display_data)
+    sales_by_region = cached_sales_by_region(display_data)
+    top_products = cached_top_products(display_data)
 
     left_chart, right_chart = st.columns(2)
     with left_chart:
@@ -431,22 +546,17 @@ else:
         },
     )
 
-    export_data = filtered_data.copy()
-    export_data.loc[:, list(MONEY_COLUMNS)] = (
-        export_data.loc[:, list(MONEY_COLUMNS)] * exchange_rate
+    csv_content = cached_filtered_csv(
+        filtered_data, currency_code, exchange_rate, export_date_format
     )
-    export_data.insert(0, "Moneda", currency_code)
-    export_data["Fecha"] = export_data["Fecha"].dt.strftime(export_date_format)
-    csv_buffer = BytesIO()
-    export_data.to_csv(csv_buffer, index=False)
     st.download_button(
         "Descargar datos filtrados (CSV)",
-        data=csv_buffer.getvalue(),
+        data=csv_content,
         file_name="ventas_filtradas.csv",
         mime="text/csv",
     )
 
-    summary = build_analysis_summary(
+    summary = cached_analysis_summary(
         kpis=kpis,
         period_a=period_a_metrics,
         period_b=period_b_metrics,
